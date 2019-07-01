@@ -18,9 +18,7 @@ public final class Logger {
     @Setter
     private static boolean debug = false;
     @Setter
-    private static java.util.logging.Logger output = java.util.logging.Logger.getLogger("Admit");
-    @Getter @Setter
-    private static boolean colorMode = false;
+    private static java.util.logging.Logger output = java.util.logging.Logger.getLogger("MCMurder");
 
 
     public enum Level {
@@ -70,7 +68,7 @@ public final class Logger {
         if (Level.insufficientLevel(Level.SEVERE, level)) return;
         String message = (debug ? c.getName() : c.getSimpleName()) + " error: " + reason;
         if (e != null) {
-            message = message + ". Exception: " + e.getMessage();
+            message = message + " | Exception: " + e.getMessage();
         }
         relayMessage(message, Level.SEVERE);
         if (printStackTraces && e != null) e.printStackTrace();

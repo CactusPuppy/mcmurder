@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
@@ -50,7 +51,6 @@ public class ConfigTest {
         Config testReader = new Config(testConfig);
         testReader.readValues(new ByteArrayInputStream(input.getBytes()));
         assertEquals("asdf", testReader.get("label.label1"));
-        System.out.println(testReader.toString());
     }
 
     @Test
@@ -61,7 +61,6 @@ public class ConfigTest {
         Config testReader = new Config(testConfig);
         testReader.readValues(new ByteArrayInputStream(input.getBytes()));
         assertEquals("true", testReader.get("label2"));
-        System.out.println(testReader.toString());
     }
 
     @Test
@@ -79,7 +78,6 @@ public class ConfigTest {
         assertEquals("unit", testReader.get("label.label1-1.oceanman"));
         assertEquals("uiop", testReader.get("label.label1-1.yml"));
         assertEquals("true", testReader.get("label2"));
-        System.out.println(testReader.toString());
     }
 
     @Test
@@ -91,19 +89,25 @@ public class ConfigTest {
                 "  nether: true\n" +
                 "  end: true\n" +
                 "  asdf # uip\n" +
-                "\n" +
+                "\n\n" +
+                "# Commented: key-value\n" +
+                "# This is the countdown section\n" +
                 "countdown:\n" +
                 "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
                 "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10" +
+                "  chunk: +1" +
                 "";
         Config testReader = new Config(testConfig);
         testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        System.out.println(testReader.toString());
+        assertEquals("true", testReader.get("game-defaults.nether"));
+        assertEquals("+1", testReader.get("countdown.chunk"));
+        assertEquals("", testReader.get("countdown"));
+        assertNull(testReader.get("Commented"));
+
         Map<Integer, String> nonKeyLines = new LinkedHashMap<>(testReader.getNonKeyLocs());
-        for (int i : nonKeyLines.keySet()) {
-            System.out.println("[Line " + i + "] " + nonKeyLines.get(i));
-        }
+        assertEquals("### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###",
+                     nonKeyLines.get(1));
+        assertEquals("# Commented: key-value", nonKeyLines.get(10));
     }
 
     @Test
@@ -126,14 +130,12 @@ public class ConfigTest {
         Config testReader = new Config(testConfig);
         testReader.readValues(new ByteArrayInputStream(input.getBytes()));
         assertTrue(testReader.saveConfig());
-        try {
-            Scanner scan = new Scanner(testConfig);
+        try (Scanner scan = new Scanner(testConfig)) {
             StringBuilder output = new StringBuilder();
             while (scan.hasNext()) {
                 output.append(scan.nextLine());
                 if (scan.hasNext()) output.append("\n");
             }
-            scan.close();
             assertEquals(input, output.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -224,14 +226,12 @@ public class ConfigTest {
         assertTrue(testReader.set("tier1.tier2", "hello"));
         assertEquals("hello", testReader.get("tier1.tier2"));
         assertTrue(testReader.saveConfig());
-        try {
-            Scanner scan = new Scanner(testConfig);
+        try (Scanner scan = new Scanner(testConfig)) {
             StringBuilder output = new StringBuilder();
             while (scan.hasNext()) {
                 output.append(scan.nextLine());
                 if (scan.hasNext()) output.append("\n");
             }
-            scan.close();
             assertEquals(expected_output, output.toString());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
