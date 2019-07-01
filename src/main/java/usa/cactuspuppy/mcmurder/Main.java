@@ -12,4 +12,9 @@ public class Main extends JavaPlugin {
         long start = System.nanoTime();
         instance = this;
     }
+
+    private boolean baseSetup() {
+        //TODO
+        return true;
+    }
 }
