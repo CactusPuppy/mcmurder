@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 import usa.cactuspuppy.mcmurder.utils.Config;
 import usa.cactuspuppy.mcmurder.utils.Logger;
@@ -30,7 +31,10 @@ public class Main extends JavaPlugin {
         }
 
         mainConfig = new Config();
-        if (mainConfig.getInitCode() != 0) {
+        try {
+            mainConfig.load(new File(getDataFolder(), "config.yml"));
+        } catch (InvalidConfigurationException | IOException e) {
+            Logger.logSevere(this.getClass(), "Could not load config.yml", e);
             abortSetup();
             return;
         }

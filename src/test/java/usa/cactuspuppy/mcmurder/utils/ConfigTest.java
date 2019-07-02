@@ -1,8 +1,10 @@
 package usa.cactuspuppy.mcmurder.utils;
 
 import org.apache.commons.io.FileUtils;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -18,223 +20,115 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 public class ConfigTest {
-    private String input;
-    private File testDir;
-    private File testConfig;
+    private Config testConfig;
 
     @Before
     public void setup() {
-        testDir = new File("test");
-        if (!testDir.isDirectory()) assumeTrue(testDir.mkdirs());
-        input = "label:\n  label1:  asdf";
-        testConfig = new File("test", "config.yml");
-        if (!testConfig.isFile()) {
-            try {
-                assertTrue(testConfig.createNewFile());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        testConfig = new Config();
     }
 
     @After
-    public void cleanup() {
+    public void teardown() {
+        testConfig = null;
+    }
+
+    @Test
+    public void stringNullCheck() throws InvalidConfigurationException, IOException {
         try {
-            FileUtils.deleteDirectory(testDir);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            testConfig.load((String) null);
+            fail();
+        } catch (IllegalArgumentException ignored) { }
     }
 
     @Test
-    public void readValuesSimple() {
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertEquals("asdf", testReader.get("label.label1"));
+    public void fileNullCheck() throws InvalidConfigurationException, IOException {
+        try {
+            testConfig.load((File) null);
+            fail();
+        } catch (IllegalArgumentException ignored) { }
     }
 
     @Test
-    public void readValuesBackIndent() {
-        input = "label:\n" +
-                "  label1:  asdf\n" +
-                "label2: true";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertEquals("true", testReader.get("label2"));
+    public void loadFromStringNullCheck() throws InvalidConfigurationException {
+        try {
+            testConfig.loadFromString(null);
+            fail();
+        } catch (IllegalArgumentException ignored) { }
+        try {
+            testConfig.loadFromString("");
+            fail();
+        } catch (IllegalArgumentException ignored) { }
     }
 
     @Test
-    public void readValuesComplicated() {
-        input = "label:\n" +
-                "  label1:  asdf\n" +
-                "  label1-1: false\n" +
-                "    oceanman:   unit\n" +
-                "   yml: uiop\n" +
-                "label2: true";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertEquals("asdf", testReader.get("label.label1"));
-        assertEquals("false", testReader.get("label.label1-1"));
-        assertEquals("unit", testReader.get("label.label1-1.oceanman"));
-        assertEquals("uiop", testReader.get("label.label1-1.yml"));
-        assertEquals("true", testReader.get("label2"));
+    public void simpleTest() throws InvalidConfigurationException {
+        String input =
+        "key: value";
+
+        testConfig.loadFromString(input);
+        assertEquals("value", testConfig.get("key"));
     }
 
     @Test
-    public void readValuesAndComments() {
-        input = "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                "\n" +
-                "game-defaults: # asdf\n" +
-                "  nether: true\n" +
-                "  end: true\n" +
-                "  asdf # uip\n" +
-                "\n\n" +
-                "# Commented: key-value\n" +
-                "# This is the countdown section\n" +
-                "countdown:\n" +
-                "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1" +
-                "";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertEquals("true", testReader.get("game-defaults.nether"));
-        assertEquals("+1", testReader.get("countdown.chunk"));
-        assertEquals("", testReader.get("countdown"));
-        assertNull(testReader.get("Commented"));
+    public void indentTest() throws InvalidConfigurationException {
+        String input =
+        "object:\n" +
+        "  key: value02";
 
-        Map<Integer, String> nonKeyLines = new LinkedHashMap<>(testReader.getNonKeyLocs());
-        assertEquals("### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###",
-                     nonKeyLines.get(1));
-        assertEquals("# Commented: key-value", nonKeyLines.get(10));
+        testConfig.loadFromString(input);
+        assertEquals("value02", testConfig.get("object.key"));
     }
 
     @Test
-    public void testSaveConfig() {
-        input = "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                "\n" +
-                "game-defaults: # asdf\n" +
-                "  nether: true\n" +
-                "  end: true\n" +
-                "  asdf # uip\n" +
-                "\n" +
-                "countdown:\n" +
-                "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10\n" +
-                "tier1:\n" +
-                "  tier2:\n" +
-                "    tier3: qwerty";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertTrue(testReader.saveConfig());
-        try (Scanner scan = new Scanner(testConfig)) {
-            StringBuilder output = new StringBuilder();
-            while (scan.hasNext()) {
-                output.append(scan.nextLine());
-                if (scan.hasNext()) output.append("\n");
-            }
-            assertEquals(input, output.toString());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+    public void commentTest01() throws InvalidConfigurationException {
+        String input =
+        "#============#\n" +
+        "# Beep Boop\n" +
+        "#============#\n" +
+        "key: value";
+
+        testConfig.loadFromString(input);
+        assertEquals("value", testConfig.get("key"));
     }
 
     @Test
-    public void testNonexistNewValue() {
-        input = "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                "\n" +
-                "game-defaults: # asdf\n" +
-                "  nether: true\n" +
-                "  end: true\n" +
-                "  asdf # uip\n" +
-                "\n" +
-                "countdown:\n" +
-                "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10\n" +
-                "tier1:\n" +
-                "  tier2:\n" +
-                "    tier3: qwerty";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertFalse(testReader.set("not-exist", "beeblebrox"));
-        assertNull(testReader.get("not-exist"));
+    public void commentTest02() throws InvalidConfigurationException {
+        String input =
+        "#============#\n" +
+        "# Beep Boop\n" +
+        "#============#\n" +
+        "object:\n" +
+        "  key: value02";
+
+        testConfig.loadFromString(input);
+        assertEquals("value02", testConfig.get("object.key"));
     }
 
     @Test
-    public void testSetNewValue() {
-        input = "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                "\n" +
-                "game-defaults: # asdf\n" +
-                "  nether: true\n" +
-                "  end: true\n" +
-                "  asdf # uip\n" +
-                "\n" +
-                "countdown:\n" +
-                "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10\n" +
-                "tier1:\n" +
-                "  tier2:\n" +
-                "    tier3: qwerty";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertTrue(testReader.set("tier1.tier2", "hello"));
-        assertEquals("hello", testReader.get("tier1.tier2"));
+    public void commentTestInline() throws InvalidConfigurationException {
+        String input =
+        "# Starting comment\n" +
+        "key: value-00  # inline comment\n" +
+        "  subkey: value01  #second inline comment\n" +
+        "  subkey02: value02\n" +
+        "  \n" +
+        "  # Explanation comment preceded by blank line\n" +
+        "  explainedkey: expl_value\n" +
+        "  \n" +
+        "# A_comment\n" +
+        "topkey: notacreepjustacookie24\n";
+
+        testConfig.loadFromString(input);
+        assertEquals("value02", testConfig.get("subkey02"));
+        assertEquals("expl_value", testConfig.get("explainedkey"));
+        assertEquals("notacreepjustacookie24", testConfig.get("topkey"));
     }
 
     @Test
-    public void testSaveConfigAfterNewValue() {
-        input = "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                "\n" +
-                "game-defaults: # asdf\n" +
-                "  nether: true\n" +
-                "  end: true\n" +
-                "  asdf # uip\n" +
-                "\n" +
-                "countdown:\n" +
-                "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10\n" +
-                "tier1:\n" +
-                "  tier2:\n" +
-                "    tier3: qwerty";
-        String expected_output =
-                "### IMPORTANT: DO NOT CHANGE THE FOLLOWING LINE UNLESS YOU KNOW WHAT YOU ARE DOING ###\n" +
-                        "version-hash: D84BDB34D4EEEF4034D77E5403F850E35BC4A51B1143E3A83510E1AAAD839748\n" +
-                        "\n" +
-                        "game-defaults: # asdf\n" +
-                        "  nether: true\n" +
-                        "  end: true\n" +
-                        "  asdf # uip\n" +
-                        "\n" +
-                        "countdown:\n" +
-                        "  default: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,30,60,300,600,900,1200,1800,3600\n" +
-                        "  lobby: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10,15,30,45,60,120,180,240,300,600\n" +
-                        "  chunk: +1,+2,+3,+4,+5,+6,+7,+8,+9,+10\n" +
-                        "tier1:\n" +
-                        "  tier2: hello\n" +
-                        "    tier3: qwerty";
-        Config testReader = new Config(testConfig);
-        testReader.readValues(new ByteArrayInputStream(input.getBytes()));
-        assertTrue(testReader.set("tier1.tier2", "hello"));
-        assertEquals("hello", testReader.get("tier1.tier2"));
-        assertTrue(testReader.saveConfig());
-        try (Scanner scan = new Scanner(testConfig)) {
-            StringBuilder output = new StringBuilder();
-            while (scan.hasNext()) {
-                output.append(scan.nextLine());
-                if (scan.hasNext()) output.append("\n");
-            }
-            assertEquals(expected_output, output.toString());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+    public void invalidConfigTest() {
+        String input =
+        "# Valid comment\n" +
+        "  Invalid # line\n";
+        assertThrows(InvalidConfigurationException.class, () -> testConfig.loadFromString(input));
     }
 }
