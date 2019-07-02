@@ -42,7 +42,7 @@ public class Config implements Map<String, String> {
     /**
      * Root node of the config. All nodes should be children of this node.
      */
-    private Node rootNode = new Node();
+    private Node rootNode = new BlankNode();
 
     /**
      * Flat map of all string keys. Does not include comments.
@@ -190,23 +190,48 @@ public class Config implements Map<String, String> {
         return cache.entrySet();
     }
 
-    /**
-     * Represents one section of the config
-     */
-    @Getter @Setter
-    private class Node {
-        private String key = null;
-        private int colonSpace;
-        private String value = null;
-        private String comment = null;
-        private List<Node> children = new ArrayList<>();
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Map) {
             return cache.equals(obj);
         }
         return false;
+    }
+
+    /**
+     * Represents one section of the config
+     */
+    @Getter @Setter
+    private abstract class Node {
+        private List<Node> children = new ArrayList<>();
+    }
+
+    /**
+     * Represents a key-value pair
+     */
+    @Getter @Setter
+    private class KeyNode extends Node {
+        private String key = null;
+        private int colonSpace;
+        private String value = null;
+    }
+
+    /**
+     * Represents a # prefixed comment
+     */
+    @Getter @Setter
+    private class CommentNode extends Node {
+        private String comment = null;
+    }
+
+    /**
+     * Represents one or more blank lines
+     */
+    @Getter @Setter
+    private class BlankNode extends Node {
+        /**
+         * Number of blank lines this node accounts for.
+         */
+        private int count = 0;
     }
 }
