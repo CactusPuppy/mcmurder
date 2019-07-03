@@ -4,9 +4,24 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>usa.cactuspuppy.mcmurder</groupId>
+    <groupId>com.github.cactuspuppy</groupId>
     <artifactId>Murder</artifactId>
     <version>0.1-SNAPSHOT</version>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/cactuspuppy/mcmurder/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>CactusPuppy</name>
+            <url>https://github.com</url>
+        </developer>
+    </developers>
 
     <properties>
         <powermock.version>2.0.0</powermock.version>

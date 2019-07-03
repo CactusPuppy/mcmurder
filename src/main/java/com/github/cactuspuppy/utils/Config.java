@@ -1,5 +1,6 @@
-package usa.cactuspuppy.mcmurder.utils;
+package com.github.cactuspuppy.utils;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,9 +27,6 @@ public class Config implements Map<String, String> {
     @Getter @Setter
     private int spacesPerIndent = 2;
 
-    @Getter
-    private File configFile;
-
     /**
      * Pattern to find key-value pairs
      */
@@ -42,7 +40,7 @@ public class Config implements Map<String, String> {
     /**
      * Root node of the config. All nodes should be children of this node.
      */
-    private Node rootNode = new BlankNode();
+    private Node rootNode = new BlankNode(0);
 
     /**
      * Flat map of all string keys. Does not include comments.
@@ -80,7 +78,8 @@ public class Config implements Map<String, String> {
             LinkedList<Integer> currIndents = new LinkedList<>();
             currIndents.addLast(0);
 
-            Node currentParent = rootNode;
+            List<Node> currentParents = new ArrayList<>();
+            currentParents.add(rootNode);
             Node previousKeyNode = null;
             int prevIndent = 0;
 
@@ -144,8 +143,28 @@ public class Config implements Map<String, String> {
         return null;
     }
 
+    /**
+     * Removes this key from the Config completely, along with any of its children.
+     * Under most circumstances, {@link Config#unset(Object)} is probably the desired operation.
+     * @param key Key to remove
+     * @return The value previously mapped to the key, if any.
+     */
     @Override
     public String remove(Object key) {
+        //TODO
+        return null;
+    }
+
+    private void removeNode(Node node) {
+        //TODO
+    }
+
+    /**
+     * Removes the mapping of this key while maintaining all child mappings
+     * @param key Key whose mapping should be removed
+     * @return The value previously mapped to the key, if any.
+     */
+    public String unset(Object key) {
         //TODO
         return null;
     }
@@ -207,10 +226,10 @@ public class Config implements Map<String, String> {
     }
 
     /**
-     * Represents a key-value pair
+     * Represents a key-value pair which may be followed by a comment
      */
     @Getter @Setter
-    private class KeyNode extends Node {
+    private class KeyNode extends CommentNode {
         private String key = null;
         private int colonSpace;
         private String value = null;
@@ -225,13 +244,15 @@ public class Config implements Map<String, String> {
     }
 
     /**
-     * Represents one or more blank lines
+     * Represents one or more blank lines.
+     * These lines
      */
     @Getter @Setter
+    @AllArgsConstructor
     private class BlankNode extends Node {
         /**
          * Number of blank lines this node accounts for.
          */
-        private int count = 0;
+        private int lineCount;
     }
 }

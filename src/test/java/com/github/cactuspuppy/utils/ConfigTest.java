@@ -1,4 +1,4 @@
-package usa.cactuspuppy.mcmurder.utils;
+package com.github.cactuspuppy.utils;
 
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.junit.After;
@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -162,15 +163,63 @@ public class ConfigTest {
         testConfig.loadFromString(input);
         testConfig.put("key.subkey", "eiko_kek");
         assertEquals("eiko_kek", testConfig.get("key.subkey"));
+        assertEquals("value", testConfig.get("key"));
     }
 
     @Test
-    public void testKeySubkeyAdd() throws InvalidConfigurationException {
-
+    public void testKeyAndSubkeyAdd() throws InvalidConfigurationException {
+        String input =
+        "# Starter comment\n" +
+        "key: value\n";
+        testConfig.loadFromString(input);
+        testConfig.put("key2", "Seagull roller");
+        testConfig.put("key2.subkey", "Segol");
+        assertEquals("Seagull roller", testConfig.get("key2"));
+        assertEquals("Segol", testConfig.get("key2.subkey"));
     }
 
+    @Test
+    public void testKeyRemoval() throws InvalidConfigurationException {
+        String input =
+        "# Starter comment\n" +
+        "key2: value2\n";
+        testConfig.loadFromString(input);
+        assertEquals("value2", testConfig.get("key2"));
+        testConfig.remove("key2");
+        assertNull(testConfig.get("key2"));
+        assertTrue(testConfig.isEmpty());
+    }
+
+    @Test
+    public void testSubkeyRemoval() throws InvalidConfigurationException {
+        String input =
+        "# Starter comment\n" +
+        "key2: value2\n" +
+        "  subkey: value\n";
+        testConfig.loadFromString(input);
+        assertEquals("value", testConfig.get("key2.subkey"));
+        testConfig.remove("subkey");
+        assertNull(testConfig.get("key2.subkey"));
+        assertEquals("value2", testConfig.get("key2"));
+    }
+
+    @Test
+    public void testTopKeyUnset() throws InvalidConfigurationException {
+        String input =
+        "# Starter comment\n" +
+        "key2: value2\n" +
+        "  subkey: value\n";
+        testConfig.loadFromString(input);
+        assertEquals("value2", testConfig.get("key2"));
+        assertEquals("value", testConfig.get("subkey"));
+        testConfig.unset("key2");
+        assertNull(testConfig.get("key2"));
+        assertEquals("value", testConfig.get("subkey"));
+    }
+
+
+
     //TODO:
-    // Adding and removing values
     // Saving and loading files
     // Mutation followed by saving and loading
     // Saving and loading string

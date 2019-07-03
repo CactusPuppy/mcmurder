@@ -1,4 +1,4 @@
-package usa.cactuspuppy.mcmurder.utils;
+package com.github.cactuspuppy.utils;
 
 import lombok.Getter;
 import lombok.Setter;
