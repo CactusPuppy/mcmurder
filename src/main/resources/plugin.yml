@@ -1,4 +1,4 @@
 name: MCMurder
 author: CactusPuppy
-main: Main
+main: com.github.cactuspuppy.Main
 version: 0.1.0

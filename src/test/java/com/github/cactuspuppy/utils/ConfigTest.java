@@ -8,12 +8,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class ConfigTest {
     private Config testConfig;
@@ -217,7 +212,25 @@ public class ConfigTest {
         assertEquals("value", testConfig.get("subkey"));
     }
 
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testClear() throws InvalidConfigurationException {
+        String input =
+        "topkey: value\n" +
+        "  subkey: value\n";
+        testConfig.loadFromString(input);
+        assertFalse(testConfig.isEmpty());
+        testConfig.clear();
+        assertTrue(testConfig.isEmpty());
+    }
 
+    public void testLoad() throws InvalidConfigurationException, IOException {
+        File config01 = new File(getClass().getResource("config01.yml").getFile());
+        testConfig.load(config01);
+        assertFalse(testConfig.isEmpty());
+        assertEquals("topvalue", testConfig.get("topkey"));
+        assertEquals("value", testConfig.get("subkey"));
+    }
 
     //TODO:
     // Saving and loading files

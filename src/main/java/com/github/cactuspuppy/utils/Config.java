@@ -172,7 +172,7 @@ public class Config implements Map<String, String> {
     @Override
     public void putAll(@NotNull Map<? extends String, ? extends String> m) {
         for (String key : m.keySet()) {
-            put(key, m.get(m));
+            put(key, m.get(key));
         }
     }
 
