@@ -2,6 +2,11 @@ package com.github.cactuspuppy.mcmurder.command;
 
 import com.github.cactuspuppy.mcmurder.Main;
 import com.github.cactuspuppy.mcmurder.utils.Logger;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -47,8 +52,21 @@ public class Delegator implements CommandExecutor, TabCompleter {
             commandSender.sendMessage(ChatColor.GOLD + Main.getInstance().getDescription().getName()
                                       + ChatColor.GREEN + " v" + Main.getInstance().getDescription().getVersion()
                                       + "for " + ChatColor.BLUE + Main.getInstance().getDescription().getAPIVersion());
-            commandSender.sendMessage(ChatColor.DARK_AQUA + "For a list of commands, type "
-                                      + ChatColor.AQUA + "/" + command.getLabel() + " help");
+
+            TextComponent interactive = new TextComponent("/" + command.getLabel() + " help");
+            interactive.setColor(net.md_5.bungee.api.ChatColor.AQUA);
+            interactive.setUnderlined(true);
+            interactive.setBold(true);
+            interactive.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                new BaseComponent[]{ new TextComponent("Click to run this command!") }
+            ));
+            interactive.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                "/" + command.getLabel() + " help"
+            ));
+            ComponentBuilder helpSuggest = new ComponentBuilder("For a list of commands, run ")
+                                           .color(net.md_5.bungee.api.ChatColor.DARK_AQUA)
+                                           .append(interactive).retain(ComponentBuilder.FormatRetention.NONE);
+            commandSender.sendMessage(helpSuggest.toString());
             return true;
         }
         String subcmd = args[0];
