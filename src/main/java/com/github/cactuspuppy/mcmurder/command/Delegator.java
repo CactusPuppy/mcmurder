@@ -1,6 +1,8 @@
 package com.github.cactuspuppy.mcmurder.command;
 
+import com.github.cactuspuppy.mcmurder.Main;
 import com.github.cactuspuppy.mcmurder.utils.Logger;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -8,6 +10,8 @@ import org.bukkit.command.TabCompleter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +31,60 @@ public class Delegator implements CommandExecutor, TabCompleter {
         }
     }
 
-    @Override
-    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return false;
+    private static SubCmd getHandler(String subcmd) {
+        SubCmd candidate = subCmdMap.get(subcmd);
+        if (candidate != null) {
+            return candidate;
+        }
+        candidate = aliasMap.get(subcmd);
+        return candidate;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return null;
+    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command,
+                             @NotNull String alias, @NotNull String[] args) {
+        if (args.length < 1) {
+            commandSender.sendMessage(ChatColor.GOLD + Main.getInstance().getDescription().getName()
+                                      + ChatColor.GREEN + " v" + Main.getInstance().getDescription().getVersion()
+                                      + "for " + ChatColor.BLUE + Main.getInstance().getDescription().getAPIVersion());
+            commandSender.sendMessage(ChatColor.DARK_AQUA + "For a list of commands, type "
+                                      + ChatColor.AQUA + "/" + command.getLabel() + " help");
+            return true;
+        }
+        String subcmd = args[0];
+        if (subcmd.equals("help")) {
+            //TODO
+            return true;
+        }
+        SubCmd handler = getHandler(subcmd);
+        if (handler == null) {
+            commandSender.sendMessage(ChatColor.RED + "Unknown subcommand or alias " + ChatColor.RESET + subcmd);
+            return true;
+        }
+        String[] newArgs = Arrays.copyOfRange(args, 1, args.length);
+        if (!handler.hasPermission(commandSender, subcmd, newArgs)) {
+            commandSender.sendMessage(ChatColor.RED + command.getPermissionMessage());
+            return true;
+        }
+        return handler.onCommand(commandSender, command, alias, newArgs);
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command,
+                                                @NotNull String alias, @NotNull String[] args) {
+        /* Handle ambiguity about whether tab complete
+        * args include command label */
+        if (args.length > 0 && args[0].equals(command.getLabel())) {
+            args = Arrays.copyOfRange(args, 1, args.length);
+        }
+        List<String> empty = new ArrayList<>();
+        if (args.length == 0) {
+            return empty;
+        }
+        SubCmd handler = getHandler(args[0]);
+        if (handler == null) {
+            return empty;
+        }
+        return handler.onTabComplete(commandSender, command, alias, args);
     }
 }
