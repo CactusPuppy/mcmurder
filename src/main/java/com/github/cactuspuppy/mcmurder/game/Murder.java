@@ -43,9 +43,6 @@ public abstract class Murder extends Game {
     @Getter @Setter
     private double hunterNumber = 0;
 
-    //TODO:
-    // Assign roles
-
     protected abstract Location getRandomSpawnableLocation();
     protected abstract void lobbyToGame();
     protected abstract void backToLobby();
@@ -66,20 +63,19 @@ public abstract class Murder extends Game {
             // State-sensitive events
             switch (state) {
                 case LOBBY:
-                    //TODO
                     handleLobbyEvent(e);
                     break;
                 case STARTING:
-                    //TODO:
-                    // Create game start countdown
                     handleStartingEvent(e);
                     break;
                 case ACTIVE:
-                    //TODO
                     handleActiveEvent(e);
                     break;
+                case PAUSED:
+                    handlePausedEvent(e);
+                    break;
                 case RESETTING:
-                    //TODO
+                    handleResettingEvent(e);
                     break;
                 default:
                     Logger.logSevere(this.getClass(), String.format("Unknown event %s passed to game", e.getType()));
@@ -87,6 +83,15 @@ public abstract class Murder extends Game {
             }
         } catch (Exception ex) {
             Logger.logSevere(this.getClass(), "Exception while handling event " + e.getType(), ex);
+        }
+    }
+
+    private void handlePausedEvent(Event e) {
+        assert state == GameState.PAUSED;
+        switch (e.getType()) {
+            case "RESUME":
+                //TODO
+                break;
         }
     }
 
@@ -111,7 +116,8 @@ public abstract class Murder extends Game {
         assert state == GameState.STARTING;
         switch (e.getType()) {
             case "ACTIVATE":
-                //TODO
+                //TODO:
+                // Assign roles
                 state = GameState.ACTIVE;
                 break;
             case "PAUSE":
@@ -144,6 +150,7 @@ public abstract class Murder extends Game {
         switch (e.getType()) {
             case "RETURN_TO_LOBBY":
                 //TODO
+                backToLobby();
                 break;
         }
     }
@@ -159,6 +166,10 @@ public abstract class Murder extends Game {
         if (p == null) {
             return;
         }
+        //TODO
+    }
+
+    private void assignRoles() {
         //TODO
     }
 
@@ -180,7 +191,7 @@ public abstract class Murder extends Game {
         PAUSE,
         RESUME,
         /**
-         * Differs from {@link MurderEventTypes#GAME_RESET} in that this will not wipe data that persists between rounds.
+         * Differs from {@link MurderEventTypes#GAME_RESET} in that round-persistent data will not be wiped.
          */
         RETURN_TO_LOBBY,
         ADD_PLAYER,
