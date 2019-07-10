@@ -1,11 +1,12 @@
 package com.github.cactuspuppy.mcmurder.game;
 
 import com.github.cactuspuppy.mcmurder.utils.Logger;
+import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -50,21 +51,23 @@ public abstract class Murder extends Game {
     protected Set<UUID> players = new HashSet<>();
     protected Set<UUID> spectators = new HashSet<>();
 
-    protected abstract Location getRandomSpawnableLocation();
+    protected abstract Location getRandomPlayerSpawn();
+    protected abstract Location getRandomScrapSpawn();
     protected abstract void lobbyToGame();
     protected abstract void backToLobby();
 
     @Override
     public void processEvent(Event e) {
-        Logger.logFineMsg(this.getClass(), "Event args: " + e.getArgs().toString(),2);
+        Logger.logFineMsg(this.getClass(), "Event args: " + Arrays.toString(e.getArgs()),2);
         try {
             // State-insensitive events
             // Add spectator
             if (e.getType().equals("ADD_SPECTATOR")) {
-                Player p = (Player) e.getArgs().get("player");
+                UUID p = PlayerUtils.getOnlinePlayer(e.getArgs()[0]);
                 addSpectator(p);
             } else if (e.getType().equals("GAME_RESET")) {
                 //TODO
+                backToLobby();
                 state = GameState.LOBBY;
             }
             // State-sensitive events
@@ -95,6 +98,7 @@ public abstract class Murder extends Game {
 
     @Override
     public void onLoad() {
+        //TODO
         backToLobby();
     }
 
@@ -117,11 +121,12 @@ public abstract class Murder extends Game {
         assert state == GameState.LOBBY;
         switch (e.getType()) {
             case "ADD_PLAYER":
-                Player p = (Player) e.getArgs().get("player");
+                UUID p = PlayerUtils.getOnlinePlayer(e.getArgs()[0]);
                 addPlayer(p);
                 break;
             case "GAME_START":
                 //TODO
+                lobbyToGame();
                 state = GameState.STARTING;
                 break;
             case "PAUSE":
@@ -134,8 +139,7 @@ public abstract class Murder extends Game {
         assert state == GameState.STARTING;
         switch (e.getType()) {
             case "ACTIVATE":
-                //TODO:
-                // Assign roles
+                assignRoles();
                 state = GameState.ACTIVE;
                 break;
         }
@@ -170,14 +174,14 @@ public abstract class Murder extends Game {
         }
     }
 
-    private void addPlayer(Player p) {
+    private void addPlayer(UUID p) {
         if (p == null) {
             return;
         }
         //TODO
     }
 
-    private void addSpectator(Player p) {
+    private void addSpectator(UUID p) {
         if (p == null) {
             return;
         }
