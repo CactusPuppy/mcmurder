@@ -1,4 +1,4 @@
-package com.github.cactuspuppy;
+package com.github.cactuspuppy.mcmurder;
 
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
@@ -6,8 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
-import com.github.cactuspuppy.utils.Config;
-import com.github.cactuspuppy.utils.Logger;
+import com.github.cactuspuppy.mcmurder.utils.Config;
+import com.github.cactuspuppy.mcmurder.utils.Logger;
 
 import java.io.File;
 import java.io.IOException;

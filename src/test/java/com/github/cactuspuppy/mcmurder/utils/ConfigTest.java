@@ -1,4 +1,4 @@
-package com.github.cactuspuppy.utils;
+package com.github.cactuspuppy.mcmurder.utils;
 
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.junit.After;
