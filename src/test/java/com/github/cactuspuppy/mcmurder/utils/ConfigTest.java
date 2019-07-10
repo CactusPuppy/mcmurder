@@ -206,10 +206,10 @@ public class ConfigTest {
         "  subkey: value\n";
         testConfig.loadFromString(input);
         assertEquals("value2", testConfig.get("key2"));
-        assertEquals("value", testConfig.get("subkey"));
+        assertEquals("value", testConfig.get("key2.subkey"));
         testConfig.unset("key2");
         assertNull(testConfig.get("key2"));
-        assertEquals("value", testConfig.get("subkey"));
+        assertEquals("value", testConfig.get("key2.subkey"));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -224,12 +224,25 @@ public class ConfigTest {
         assertTrue(testConfig.isEmpty());
     }
 
-    public void testLoad() throws InvalidConfigurationException, IOException {
+    @Test
+    public void testLoad01() throws InvalidConfigurationException, IOException {
         File config01 = new File(getClass().getResource("config01.yml").getFile());
         testConfig.load(config01);
         assertFalse(testConfig.isEmpty());
         assertEquals("topvalue", testConfig.get("topkey"));
-        assertEquals("value", testConfig.get("subkey"));
+        assertEquals("value", testConfig.get("topkey.subkey"));
+    }
+
+    @Test
+    public void testLoad02() throws InvalidConfigurationException, IOException {
+        File config02 = new File(getClass().getResource("config02.yml").getFile());
+        testConfig.load(config02);
+        assertFalse(testConfig.isEmpty());
+        assertEquals("value1", testConfig.get("key1"));
+        assertEquals("value1-2", testConfig.get("key1.subkey1-2"));
+        assertEquals("value2", testConfig.get("key2"));
+        assertEquals("boogle", testConfig.get("key2.subkey2-2"));
+        assertEquals("supersubvalue", testConfig.get("key1.subkey1-2.supersubkey"));
     }
 
     //TODO:
