@@ -91,6 +91,7 @@ public abstract class Murder extends Game {
         switch (e.getType()) {
             case "RESUME":
                 //TODO
+                state = GameState.ACTIVE;
                 break;
         }
     }
@@ -119,9 +120,6 @@ public abstract class Murder extends Game {
                 //TODO:
                 // Assign roles
                 state = GameState.ACTIVE;
-                break;
-            case "PAUSE":
-                //TODO
                 break;
         }
     }
