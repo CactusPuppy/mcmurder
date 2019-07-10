@@ -16,8 +16,10 @@ public abstract class Game {
 
     public abstract void processEvent(Event e);
 
+    public abstract boolean isLocked();
+
     public interface Event {
         String getType();
-        Map<String, Object> getArgs();
+        String[] getArgs();
     }
 }

@@ -6,6 +6,10 @@ import lombok.Setter;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 @SuppressWarnings("SwitchStatementWithTooFewBranches")
 public abstract class Murder extends Game {
     private GameState state = GameState.LOBBY;
@@ -42,6 +46,9 @@ public abstract class Murder extends Game {
      */
     @Getter @Setter
     private double hunterNumber = 0;
+
+    protected Set<UUID> players = new HashSet<>();
+    protected Set<UUID> spectators = new HashSet<>();
 
     protected abstract Location getRandomSpawnableLocation();
     protected abstract void lobbyToGame();
@@ -84,6 +91,16 @@ public abstract class Murder extends Game {
         } catch (Exception ex) {
             Logger.logSevere(this.getClass(), "Exception while handling event " + e.getType(), ex);
         }
+    }
+
+    @Override
+    public void onLoad() {
+        backToLobby();
+    }
+
+    @Override
+    public boolean isLocked() {
+        return state == GameState.LOBBY;
     }
 
     private void handlePausedEvent(Event e) {
