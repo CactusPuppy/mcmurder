@@ -88,7 +88,7 @@ public abstract class Murder extends Game {
                     handleResettingEvent(e);
                     break;
                 default:
-                    Logger.logSevere(this.getClass(), String.format("Unknown event %s passed to game", e.getType()));
+                    Logger.logSevere(this.getClass(), String.format("Invalid game state %s ", state.toString()));
                     break;
             }
         } catch (Exception ex) {
