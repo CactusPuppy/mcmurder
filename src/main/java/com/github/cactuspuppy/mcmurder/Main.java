@@ -1,5 +1,7 @@
 package com.github.cactuspuppy.mcmurder;
 
+import com.github.cactuspuppy.mcmurder.game.Game;
+import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -12,12 +14,15 @@ import com.github.cactuspuppy.mcmurder.utils.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 
 public class Main extends JavaPlugin {
     @Getter
     private static Main instance;
     @Getter
     private Config mainConfig;
+    @Getter
+    private Game currentGame;
 
     @Override
     public void onEnable() {
@@ -53,6 +58,7 @@ public class Main extends JavaPlugin {
 
     private boolean baseSetup() {
         Logger.setOutput(java.util.logging.Logger.getLogger(ChatColor.RED + "MCMurder" + ChatColor.RESET));
+        Bukkit.getPluginManager().registerEvents(new PlayerUtils(), this);
         return createConfig();
     }
 
@@ -78,6 +84,27 @@ public class Main extends JavaPlugin {
                 return false;
             }
         }
+        return true;
+    }
+
+    /**
+     * If the current game is not locked (i.e. is swappable),<br>
+     *     unloads the previous game, sets the current game, and loads the game.
+     * @param game The new game to load
+     * @return Whether the new game was successfully set
+     */
+    public boolean loadNewGame(Class<? extends Game> game) {
+        if (currentGame.isLocked()) {
+            return false;
+        }
+        currentGame.onUnload();
+        try {
+            currentGame = game.getConstructor().newInstance();
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            Logger.logSevere(this.getClass(), "Exception while loading game of type " + game.getName(), e);
+            return false;
+        }
+        currentGame.onLoad();
         return true;
     }
 }
