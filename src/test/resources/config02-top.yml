@@ -15,4 +15,4 @@ key2: value2
   subkey2-2: boogle # Inline commenterino
 
 key3: value3
-  subkey3-1: asdf # asdf comment
+  subkey3-1: asdf

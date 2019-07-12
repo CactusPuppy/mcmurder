@@ -1,17 +1,37 @@
 package com.github.cactuspuppy.mcmurder.utils;
 
+import com.google.common.io.Files;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ConfigTest {
     private Config testConfig;
+    private static File tempDirectory;
+
+    @BeforeClass
+    public static void classSetup() {
+        tempDirectory = Files.createTempDir();
+    }
+
+    @AfterClass
+    public static void classTeardown() {
+        tempDirectory.deleteOnExit();
+    }
 
     @Before
     public void setup() {
@@ -32,31 +52,19 @@ public class ConfigTest {
     }
 
     @Test
-    public void stringNullCheck() throws InvalidConfigurationException, IOException {
-        try {
-            testConfig.load((String) null);
-            fail();
-        } catch (IllegalArgumentException ignored) { }
+    public void stringNullCheck() {
+        assertThrows(IllegalArgumentException.class, () -> testConfig.load((String) null));
     }
 
     @Test
     public void fileNullCheck() throws InvalidConfigurationException, IOException {
-        try {
-            testConfig.load((File) null);
-            fail();
-        } catch (IllegalArgumentException ignored) { }
+        assertThrows(IllegalArgumentException.class, () -> testConfig.load((File) null));
     }
 
     @Test
     public void loadFromStringNullCheck() throws InvalidConfigurationException {
-        try {
-            testConfig.loadFromString(null);
-            fail();
-        } catch (IllegalArgumentException ignored) { }
-        try {
-            testConfig.loadFromString("");
-            fail();
-        } catch (IllegalArgumentException ignored) { }
+        assertThrows(IllegalArgumentException.class, () -> testConfig.loadFromString(null));
+        assertThrows(IllegalArgumentException.class, () -> testConfig.loadFromString(""));
     }
 
     @Test
@@ -226,7 +234,7 @@ public class ConfigTest {
 
     @Test
     public void testLoad01() throws InvalidConfigurationException, IOException {
-        File config01 = new File(getClass().getResource("config01.yml").getFile());
+        File config01 = new File(getClass().getResource("/config01.yml").getFile());
         testConfig.load(config01);
         assertFalse(testConfig.isEmpty());
         assertEquals("topvalue", testConfig.get("topkey"));
@@ -235,7 +243,7 @@ public class ConfigTest {
 
     @Test
     public void testLoad02() throws InvalidConfigurationException, IOException {
-        File config02 = new File(getClass().getResource("config02.yml").getFile());
+        File config02 = new File(getClass().getResource("/config02.yml").getFile());
         testConfig.load(config02);
         assertFalse(testConfig.isEmpty());
         assertEquals("value1", testConfig.get("key1"));
@@ -245,8 +253,51 @@ public class ConfigTest {
         assertEquals("supersubvalue", testConfig.get("key1.subkey1-2.supersubkey"));
     }
 
-    //TODO:
-    // Saving and loading files
-    // Mutation followed by saving and loading
-    // Saving and loading string
+    @Test
+    public void testSaveNoMod01() throws InvalidConfigurationException, IOException {
+        File config01 = new File(getClass().getResource("/config01.yml").getFile());
+        testConfig.load(config01);
+        File saved01 = File.createTempFile("config01-temp", ".yml", tempDirectory);
+        testConfig.save(saved01);
+        assertTrue(FileUtils.contentEquals(config01, saved01));
+        if (!saved01.delete()) {
+            System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
+            fail("Failed to remove temporary config file");
+            saved01.deleteOnExit();
+        }
+    }
+
+    @Test
+    public void testSaveNoMod02() throws InvalidConfigurationException, IOException {
+        File config02 = new File(getClass().getResource("/config02.yml").getFile());
+        testConfig.load(config02);
+        File saved02 = File.createTempFile("config02-temp", ".yml", tempDirectory);
+        testConfig.save(saved02);
+        assertTrue(FileUtils.contentEquals(config02, saved02));
+        if (!saved02.delete()) {
+            System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
+            fail("Failed to remove temporary config file");
+            saved02.deleteOnExit();
+        }
+    }
+
+    @Test
+    public void testSaveAfterMod01() throws InvalidConfigurationException, IOException {
+        File config02 = new File(getClass().getResource("/config02.yml").getFile());
+        File config02Mod = new File(getClass().getResource("/config02-top.yml").getFile());
+        testConfig.load(config02);
+        assertNull(testConfig.get("key3"));
+        assertNull(testConfig.get("key3.subkey3-1"));
+        testConfig.addBlankLines(1);
+        testConfig.put("key3.subkey3-1", "asdf");
+        testConfig.put("key3", "value3");
+        File saved = File.createTempFile("config02-mod-temp", ".yml", tempDirectory);
+        testConfig.save(saved);
+        assertTrue(FileUtils.contentEquals(config02Mod, saved));
+        if (!saved.delete()) {
+            System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
+            fail("Failed to remove temporary config file");
+            saved.deleteOnExit();
+        }
+    }
 }
