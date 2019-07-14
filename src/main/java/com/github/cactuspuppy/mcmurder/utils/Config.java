@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -112,10 +113,27 @@ public class Config implements Map<String, String> {
             int prevIndent = 0;
 
             while (scan.hasNextLine()) {
+                Node thisNode;
                 String line = scan.nextLine();
                 lineIndex++;
 
                 //Comment handling
+                Matcher matcher = COMMENT_MATCHER.matcher(line);
+                String comment = null;
+                if (matcher.find()) {
+                    line = matcher.group(1);
+                    comment = matcher.group(2);
+                }
+
+                //Find key-value if possible
+                matcher = KEY_VALUE_MATCHER.matcher(line);
+                if (matcher.matches()) {
+                    String indent = matcher.group(1);
+                    String key = matcher.group(2);
+                    String colonSpace = matcher.group(3);
+                    String value = matcher.group(4);
+                    int currIndent = indent.length();
+                }
             }
         } catch (NoSuchElementException | IllegalStateException e) {
             Logger.logSevere(this.getClass(),
@@ -218,7 +236,7 @@ public class Config implements Map<String, String> {
      * This comment is automatically prepended by "#";
      * any spaces after the "#" must be manually included in {@code comment}.
      * @param comment Comment to add
-     * @param indent Number of spaces to indent by
+     * @param indent Number of levels to indent by
      */
     public void addComment(String comment, int indent) {
         //TODO
@@ -249,7 +267,7 @@ public class Config implements Map<String, String> {
     /**
      * Add a series of blank lines to the end of the config
      * @param lines Number of blank lines to add
-     * @param indent Number of spaces to indent these lines by
+     * @param indent Number of levels to indent these lines by
      */
     public void addBlankLines(int lines, int indent) {
         //TODO
@@ -259,7 +277,7 @@ public class Config implements Map<String, String> {
      * Add a series of blank lines to the end of the config
      * @param lines           Number of blank lines to add
      * @param matchPrevIndent Whether to match the previous node's indentation
-     *                        or use 0 indentation
+     *                        or use top-level indentation (0)
      */
     public void addBlankLines(int lines, boolean matchPrevIndent) {
         //TODO
