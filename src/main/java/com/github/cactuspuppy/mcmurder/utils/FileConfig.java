@@ -16,8 +16,7 @@ public class FileConfig extends Config {
         try {
             save(configFile);
         } catch (IOException e) {
-            //FIXME
-            e.printStackTrace();
+            Logger.logSevere(this.getClass(), "Problem saving file", e);
         }
     }
 
@@ -25,8 +24,7 @@ public class FileConfig extends Config {
         try {
             load(configFile);
         } catch (InvalidConfigurationException | IOException e) {
-            //FIXME
-            e.printStackTrace();
+            Logger.logSevere(this.getClass(), "Problem reloading config from file", e);
         }
     }
 
