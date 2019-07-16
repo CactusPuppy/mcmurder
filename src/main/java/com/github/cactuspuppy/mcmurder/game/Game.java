@@ -9,7 +9,7 @@ import java.util.Map;
 public abstract class Game {
     @Getter
     @Setter(AccessLevel.PROTECTED)
-    private static Class<? extends Enum> events;
+    private static Class<? extends EventType> events;
 
     public void onLoad() { }
     public void onUnload() { }
@@ -19,7 +19,11 @@ public abstract class Game {
     public abstract boolean isLocked();
 
     public interface Event {
-        String getType();
+        EventType getType();
         String[] getArgs();
+    }
+
+    public interface EventType {
+        String getName();
     }
 }

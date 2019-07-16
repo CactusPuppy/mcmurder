@@ -4,10 +4,15 @@ import com.github.cactuspuppy.mcmurder.utils.Logger;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,7 +27,8 @@ public abstract class Murder extends Game {
      * <p>
      * Determines the number of murderers, either by proportion or by absolute number.<br>
      * - If murdererNumber <= 0, one murderer is chosen.<br>
-     * - If murdererNumber is in range (0, 1), exclusive, that proportion of players will become murderers.<br>
+     * - If murdererNumber is in range (0, 1), exclusive, that proportion of players will become murderers, rounded down.
+     * At least one person will become a murderer.<br>
      * - If murdererNumber >= 1, that number of players will become murderers.<br>
      * </p>
      * <p>
@@ -37,7 +43,8 @@ public abstract class Murder extends Game {
      * <p>
      * Determines the number of hunters, either by proportion or by absolute number.<br>
      * - If hunterNumber <= 0, one hunter is chosen.<br>
-     * - If hunterNumber is in range (0, 1), exclusive, that proportion of players will become hunters.<br>
+     * - If hunterNumber is in range (0, 1), exclusive, that proportion of players will become hunters, rounded down.
+     * At least one person will become a hunter.<br>
      * - If hunterNumber >= 1, that number of players will become hunters.<br>
      * </p>
      * <p>
@@ -51,6 +58,11 @@ public abstract class Murder extends Game {
     protected Set<UUID> players = new HashSet<>();
     protected Set<UUID> spectators = new HashSet<>();
 
+    protected Scoreboard gameScoreboard;
+    protected Team murderers;
+    protected Team innocents;
+    protected Set<UUID> hunters = new HashSet<>();
+
     protected abstract Location getRandomPlayerSpawn();
     protected abstract Location getRandomScrapSpawn();
     protected abstract void lobbyToGame();
@@ -62,10 +74,10 @@ public abstract class Murder extends Game {
         try {
             // State-insensitive events
             // Add spectator
-            if (e.getType().equals("ADD_SPECTATOR")) {
+            if (e.getType().getName().equals("ADD_SPECTATOR")) {
                 UUID p = PlayerUtils.getOnlinePlayer(e.getArgs()[0]);
                 addSpectator(p);
-            } else if (e.getType().equals("GAME_RESET")) {
+            } else if (e.getType().getName().equals("GAME_RESET")) {
                 //TODO
                 backToLobby();
                 state = GameState.LOBBY;
@@ -98,7 +110,18 @@ public abstract class Murder extends Game {
 
     @Override
     public void onLoad() {
-        //TODO
+        gameScoreboard = Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard();
+
+        murderers = gameScoreboard.registerNewTeam("Murderers");
+        murderers.setAllowFriendlyFire(true);
+        murderers.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+        murderers.setColor(ChatColor.RED);
+
+        innocents = gameScoreboard.registerNewTeam("Innocents");
+        innocents.setAllowFriendlyFire(true);
+        innocents.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+        innocents.setColor(ChatColor.BLUE);
+
         backToLobby();
     }
 
@@ -109,7 +132,7 @@ public abstract class Murder extends Game {
 
     private void handlePausedEvent(Event e) {
         assert state == GameState.PAUSED;
-        switch (e.getType()) {
+        switch (e.getType().getName()) {
             case "RESUME":
                 //TODO
                 state = GameState.ACTIVE;
@@ -119,7 +142,7 @@ public abstract class Murder extends Game {
 
     private void handleLobbyEvent(Event e) {
         assert state == GameState.LOBBY;
-        switch (e.getType()) {
+        switch (e.getType().getName()) {
             case "ADD_PLAYER":
                 UUID p = PlayerUtils.getOnlinePlayer(e.getArgs()[0]);
                 addPlayer(p);
@@ -137,7 +160,7 @@ public abstract class Murder extends Game {
 
     private void handleStartingEvent(Event e) {
         assert state == GameState.STARTING;
-        switch (e.getType()) {
+        switch (e.getType().getName()) {
             case "ACTIVATE":
                 assignRoles();
                 state = GameState.ACTIVE;
@@ -148,7 +171,7 @@ public abstract class Murder extends Game {
     private void handleActiveEvent(Event e) {
         assert state == GameState.ACTIVE;
         //TODO
-        switch (e.getType()) {
+        switch (e.getType().getName()) {
             case "DECLARE_INNOCENT_VICTORY":
                 //TODO
                 state = GameState.RESETTING;
@@ -166,7 +189,7 @@ public abstract class Murder extends Game {
     private void handleResettingEvent(Event e) {
         assert state == GameState.RESETTING;
         //TODO
-        switch (e.getType()) {
+        switch (e.getType().getName()) {
             case "RETURN_TO_LOBBY":
                 //TODO
                 backToLobby();
@@ -178,21 +201,23 @@ public abstract class Murder extends Game {
         if (p == null) {
             return;
         }
-        //TODO
+        spectators.remove(p);
+        players.add(p);
     }
 
     private void addSpectator(UUID p) {
         if (p == null) {
             return;
         }
-        //TODO
+        players.remove(p);
+        spectators.add(p);
     }
 
     private void assignRoles() {
         //TODO
     }
 
-    public enum MurderEventTypes {
+    public enum MurderEventTypes implements EventType {
         /**
          * Hard reset to lobby, cancelling all tasks and completely resetting the game, including any round-persistent data.
          */
@@ -214,7 +239,13 @@ public abstract class Murder extends Game {
          */
         RETURN_TO_LOBBY,
         ADD_PLAYER,
-        ADD_SPECTATOR
+        ADD_SPECTATOR;
+
+
+        @Override
+        public String getName() {
+            return this.name();
+        }
     }
 
     private enum GameState {
