@@ -127,13 +127,33 @@ public class Config implements Map<String, String> {
 
                 //Find key-value if possible
                 matcher = KEY_VALUE_MATCHER.matcher(line);
+                boolean hasComment = comment != null && !comment.equals("");
                 if (matcher.matches()) {
                     String indent = matcher.group(1);
                     String key = matcher.group(2);
-                    String colonSpace = matcher.group(3);
+                    int colonSpace = matcher.group(3).length();
                     String value = matcher.group(4);
                     int currIndent = indent.length();
+                    KeyNode thisKeyNode = new KeyNode();
+
+                    if (hasComment) {
+                        thisKeyNode.setComment(comment);
+                    }
+                    thisKeyNode.setKey("FIXME"); //FIXME
+                    thisKeyNode.setValue(value);
+                    thisKeyNode.setColonSpace(colonSpace);
+                    thisNode = thisKeyNode;
+                } else if (hasComment) {
+                    if (line.trim().length() > 0) {
+                        throw new InvalidConfigurationException(
+                            String.format("Invalid sequence on line %d: %s", lineIndex, line)
+                        );
+                    }
+                    CommentNode thisCommentNode = new CommentNode();
+                    thisCommentNode.setComment(comment);
+                    //TODO: May have to calculate up here
                 }
+                //TODO: Add to parent
             }
         } catch (NoSuchElementException | IllegalStateException e) {
             Logger.logSevere(this.getClass(),
