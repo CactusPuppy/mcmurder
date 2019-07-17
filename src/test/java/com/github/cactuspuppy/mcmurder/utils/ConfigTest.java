@@ -127,8 +127,8 @@ public class ConfigTest {
 
         testConfig.loadFromString(input);
         assertEquals("value-00", testConfig.get("key"));
-        assertEquals("value01", testConfig.get("subkey"));
-        assertEquals("expl_value", testConfig.get("explainedkey"));
+        assertEquals("value01", testConfig.get("key.subkey"));
+        assertEquals("expl_value", testConfig.get("key.explainedkey"));
         assertEquals("notacreepjustacookie24", testConfig.get("topkey"));
     }
 
@@ -259,7 +259,7 @@ public class ConfigTest {
         testConfig.load(config01);
         File saved01 = File.createTempFile("config01-temp", ".yml", tempDirectory);
         testConfig.save(saved01);
-        assertTrue(FileUtils.contentEquals(config01, saved01));
+        assertTrue(FileUtils.contentEqualsIgnoreEOL(config01, saved01, null));
         if (!saved01.delete()) {
             System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
             fail("Failed to remove temporary config file");
@@ -273,7 +273,7 @@ public class ConfigTest {
         testConfig.load(config02);
         File saved02 = File.createTempFile("config02-temp", ".yml", tempDirectory);
         testConfig.save(saved02);
-        assertTrue(FileUtils.contentEquals(config02, saved02));
+        assertTrue(FileUtils.contentEqualsIgnoreEOL(config02, saved02, null));
         if (!saved02.delete()) {
             System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
             fail("Failed to remove temporary config file");
@@ -293,7 +293,7 @@ public class ConfigTest {
         testConfig.put("key3", "value3");
         File saved = File.createTempFile("config02-mod-temp", ".yml", tempDirectory);
         testConfig.save(saved);
-        assertTrue(FileUtils.contentEquals(config02Mod, saved));
+        assertTrue(FileUtils.contentEqualsIgnoreEOL(config02Mod, saved, null));
         if (!saved.delete()) {
             System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
             fail("Failed to remove temporary config file");

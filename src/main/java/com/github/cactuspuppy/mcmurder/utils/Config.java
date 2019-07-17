@@ -1,5 +1,6 @@
 package com.github.cactuspuppy.mcmurder.utils;
 
+import com.google.common.collect.Iterables;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -105,15 +106,17 @@ public class Config implements Map<String, String> {
         try (Scanner scan = new Scanner(stream)) {
             //Track indent levels
             LinkedList<Integer> currIndents = new LinkedList<>();
-            currIndents.addLast(0);
+            currIndents.add(-1);
 
-            List<Node> currentParents = new ArrayList<>();
+            LinkedList<Node> currentParents = new LinkedList<>();
             currentParents.add(rootNode);
             Node previousKeyNode = null;
+            Node previousNode = null;
             int prevIndent = 0;
 
             while (scan.hasNextLine()) {
                 Node thisNode;
+                int currIndent;
                 String line = scan.nextLine();
                 lineIndex++;
 
@@ -128,37 +131,95 @@ public class Config implements Map<String, String> {
                 //Find key-value if possible
                 matcher = KEY_VALUE_MATCHER.matcher(line);
                 boolean hasComment = comment != null && !comment.equals("");
-                if (matcher.matches()) {
+                if (matcher.matches()) { // Key Node
                     String indent = matcher.group(1);
                     String key = matcher.group(2);
                     int colonSpace = matcher.group(3).length();
                     String value = matcher.group(4);
-                    int currIndent = indent.length();
+                    currIndent = indent.length();
                     KeyNode thisKeyNode = new KeyNode();
 
                     if (hasComment) {
                         thisKeyNode.setComment(comment);
                     }
-                    thisKeyNode.setKey("FIXME"); //FIXME
+                    handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
+                    StringJoiner keyMaker = new StringJoiner(".");
+                    for (Node n : currentParents) {
+                        if (n instanceof KeyNode) {
+                            keyMaker.add(((KeyNode) n).key);
+                        }
+                    }
+                    keyMaker.add(key);
+                    thisKeyNode.setKey(key);
                     thisKeyNode.setValue(value);
                     thisKeyNode.setColonSpace(colonSpace);
+                    cache.put(keyMaker.toString(), value);
+
+                    previousKeyNode = thisKeyNode;
                     thisNode = thisKeyNode;
-                } else if (hasComment) {
-                    if (line.trim().length() > 0) {
+                } else if (hasComment) { // Comment Node
+                    if (line.length() > 0) {
                         throw new InvalidConfigurationException(
                             String.format("Invalid sequence on line %d: %s", lineIndex, line)
                         );
                     }
-                    CommentNode thisCommentNode = new CommentNode();
-                    thisCommentNode.setComment(comment);
-                    //TODO: May have to calculate up here
+                    currIndent = prevIndent;
+                    handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
+                    CommentNode commentNode;
+                    if (previousNode instanceof CommentNode) {
+                        commentNode = (CommentNode) previousNode;
+                        commentNode.setComment(commentNode.getComment() + "\n" + comment);
+                    } else {
+                        commentNode = new CommentNode();
+                        commentNode.setComment(comment);
+                    }
+                    thisNode = commentNode;
+                    //TODO
+                } else if (line.trim().length() == 0) { // Blank line
+                    currIndent = line.length();
+                    handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
+                    BlankNode blankNode;
+                    if (previousNode instanceof BlankNode &&
+                        ((BlankNode) previousNode).getLineCount() == currIndent) {
+                        blankNode = (BlankNode) previousNode;
+                    } else {
+                        blankNode = new BlankNode(0, currIndent);
+                    }
+                    blankNode.incrLineCount();
+                    thisNode = blankNode;
+                    //TODO
+                } else {
+                    throw new InvalidConfigurationException(
+                        String.format("Invalid sequence on line %d: %s", lineIndex, line)
+                    );
                 }
-                //TODO: Add to parent
+
+                if (previousNode == null || !previousNode.equals(thisNode)) {
+                    currentParents.getLast().getChildren().add(thisNode);
+                }
+                prevIndent = currIndent;
+                previousNode = thisNode;
             }
         } catch (NoSuchElementException | IllegalStateException e) {
             Logger.logSevere(this.getClass(),
             "Exception while parsing new config input stream at line " + lineIndex, e);
             throw new InvalidConfigurationException();
+        }
+    }
+
+    private void handleIndent(LinkedList<Integer> currIndents, LinkedList<Node> currentParents, Node previousKeyNode, int prevIndent, int currIndent) {
+        if (currIndent > prevIndent) {
+            currentParents.addLast(previousKeyNode);
+            currIndents.add(prevIndent);
+        } else if (currIndent < prevIndent) {
+            while (currIndent <= currIndents.peekLast()) { //Pop prefixes off the end until reach appropriate indent level
+                currIndents.removeLast();
+                if (!currentParents.isEmpty()) currentParents.removeLast();
+                if (currIndents.isEmpty()) {
+                    currIndents.addLast(0);
+                    break;
+                }
+            }
         }
     }
 
@@ -438,6 +499,10 @@ public class Config implements Map<String, String> {
                 return false;
             }
             return lineCount == ((BlankNode) obj).lineCount;
+        }
+
+        public void incrLineCount() {
+            lineCount++;
         }
     }
 }
