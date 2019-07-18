@@ -201,13 +201,13 @@ public class ConfigTest {
         "  subkey: value\n";
         testConfig.loadFromString(input);
         assertEquals("value", testConfig.get("key2.subkey"));
-        testConfig.remove("subkey");
+        testConfig.remove("key2.subkey");
         assertNull(testConfig.get("key2.subkey"));
         assertEquals("value2", testConfig.get("key2"));
     }
 
     @Test
-    public void testTopKeyUnset() throws InvalidConfigurationException {
+    public void testTopKeyRemove() throws InvalidConfigurationException {
         String input =
         "# Starter comment\n" +
         "key2: value2\n" +
@@ -215,9 +215,24 @@ public class ConfigTest {
         testConfig.loadFromString(input);
         assertEquals("value2", testConfig.get("key2"));
         assertEquals("value", testConfig.get("key2.subkey"));
-        testConfig.unset("key2");
+        testConfig.remove("key2");
         assertNull(testConfig.get("key2"));
         assertEquals("value", testConfig.get("key2.subkey"));
+    }
+
+    @Test
+    public void testTopKeyKill() throws InvalidConfigurationException {
+        String input =
+        "# Starter comment\n" +
+        "key2: value2\n" +
+        "  subkey: value\n";
+        testConfig.loadFromString(input);
+        assertEquals("value2", testConfig.get("key2"));
+        assertEquals("value", testConfig.get("key2.subkey"));
+        testConfig.kill("key2");
+        assertNull(testConfig.get("key2"));
+        assertNull(testConfig.get("key2.subkey"));
+        assertTrue(testConfig.isEmpty());
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -239,6 +254,7 @@ public class ConfigTest {
         assertFalse(testConfig.isEmpty());
         assertEquals("topvalue", testConfig.get("topkey"));
         assertEquals("value", testConfig.get("topkey.subkey"));
+        assertEquals("poorly formatted key", testConfig.get("a"));
     }
 
     @Test

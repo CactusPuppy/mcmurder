@@ -1,19 +1,35 @@
 package com.github.cactuspuppy.mcmurder.utils;
 
-import com.google.common.collect.Iterables;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
-import java.nio.charset.Charset;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.Key;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +50,7 @@ public class Config implements Map<String, String> {
     /**
      * Pattern to find key-value pairs
      */
-    private static final Pattern KEY_VALUE_MATCHER = Pattern.compile("^( *)([^:\\n]+):( *)([^:\\n]*)$");
+    private static final Pattern KEY_VALUE_MATCHER = Pattern.compile("^( *)([^:\\n ][^:\\n]*):( *)([^:\\n]*)$");
 
     /**
      * Pattern to capture comments
@@ -44,7 +60,7 @@ public class Config implements Map<String, String> {
     /**
      * Root node of the config. All nodes should be children of this node.
      */
-    private Node rootNode = new BlankNode(0, 0);
+    private RootNode rootNode = new RootNode();
 
     /**
      * Flat map of all string keys. Does not include comments.
@@ -77,7 +93,7 @@ public class Config implements Map<String, String> {
      */
     public void load(String fileName) throws IllegalArgumentException, FileNotFoundException,
                                              InvalidConfigurationException, IOException {
-        if (fileName == null || fileName.equals("")) {
+        if (fileName == null || fileName.isEmpty()) {
             throw new IllegalArgumentException("Filename must not be empty or null");
         }
         File configFile = new File(fileName);
@@ -95,7 +111,7 @@ public class Config implements Map<String, String> {
      * @throws InvalidConfigurationException If {@code configString} is not a valid config string
      */
     public void loadFromString(String configString) throws IllegalArgumentException, InvalidConfigurationException {
-        if (configString == null || configString.equals("")) {
+        if (configString == null || configString.isEmpty()) {
             throw new IllegalArgumentException("Filename must not be empty or null");
         }
         loadInputStream(new ByteArrayInputStream(configString.getBytes()));
@@ -108,9 +124,9 @@ public class Config implements Map<String, String> {
             LinkedList<Integer> currIndents = new LinkedList<>();
             currIndents.add(-1);
 
-            LinkedList<Node> currentParents = new LinkedList<>();
+            LinkedList<KeyNode> currentParents = new LinkedList<>();
             currentParents.add(rootNode);
-            Node previousKeyNode = null;
+            KeyNode previousKeyNode = null;
             Node previousNode = null;
             int prevIndent = 0;
 
@@ -130,29 +146,29 @@ public class Config implements Map<String, String> {
 
                 //Find key-value if possible
                 matcher = KEY_VALUE_MATCHER.matcher(line);
-                boolean hasComment = comment != null && !comment.equals("");
+                boolean hasComment = comment != null && !comment.isEmpty();
                 if (matcher.matches()) { // Key Node
                     String indent = matcher.group(1);
-                    String key = matcher.group(2);
+                    String key = matcher.group(2).trim();
                     int colonSpace = matcher.group(3).length();
-                    String value = matcher.group(4);
+                    String value = matcher.group(4).trim();
                     currIndent = indent.length();
-                    KeyNode thisKeyNode = new KeyNode();
-
+                    KeyNode thisKeyNode = new KeyNode(key);
+                    thisKeyNode.setValue(value);
+                    thisKeyNode.setColonSpace(colonSpace);
                     if (hasComment) {
                         thisKeyNode.setComment(comment);
                     }
                     handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
+
                     StringJoiner keyMaker = new StringJoiner(".");
                     for (Node n : currentParents) {
-                        if (n instanceof KeyNode) {
+                        if (n instanceof KeyNode && !(n instanceof RootNode)) {
                             keyMaker.add(((KeyNode) n).key);
                         }
                     }
                     keyMaker.add(key);
-                    thisKeyNode.setKey(key);
-                    thisKeyNode.setValue(value);
-                    thisKeyNode.setColonSpace(colonSpace);
+                    currentParents.getLast().getKeyChildren().put(key, thisKeyNode);
                     cache.put(keyMaker.toString(), value);
 
                     previousKeyNode = thisKeyNode;
@@ -174,7 +190,6 @@ public class Config implements Map<String, String> {
                         commentNode.setComment(comment);
                     }
                     thisNode = commentNode;
-                    //TODO
                 } else if (line.trim().length() == 0) { // Blank line
                     currIndent = line.length();
                     handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
@@ -187,7 +202,6 @@ public class Config implements Map<String, String> {
                     }
                     blankNode.incrLineCount();
                     thisNode = blankNode;
-                    //TODO
                 } else {
                     throw new InvalidConfigurationException(
                         String.format("Invalid sequence on line %d: %s", lineIndex, line)
@@ -207,12 +221,13 @@ public class Config implements Map<String, String> {
         }
     }
 
-    private void handleIndent(LinkedList<Integer> currIndents, LinkedList<Node> currentParents, Node previousKeyNode, int prevIndent, int currIndent) {
+    private void handleIndent(LinkedList<Integer> currIndents, LinkedList<KeyNode> currentParents,
+                              KeyNode previousKeyNode, int prevIndent, int currIndent) {
         if (currIndent > prevIndent) {
             currentParents.addLast(previousKeyNode);
             currIndents.add(prevIndent);
         } else if (currIndent < prevIndent) {
-            while (currIndent <= currIndents.peekLast()) { //Pop prefixes off the end until reach appropriate indent level
+            while (currIndent <= currIndents.peekLast()) {
                 currIndents.removeLast();
                 if (!currentParents.isEmpty()) currentParents.removeLast();
                 if (currIndents.isEmpty()) {
@@ -283,33 +298,114 @@ public class Config implements Map<String, String> {
     @Nullable
     @Override
     public String put(String key, String value) {
-        //TODO
+        put(key, value, null);
         return null;
     }
 
     /**
-     * Insert a key-value pair with a trailing comment
+     * Insert a key-value pair with a trailing comment. Key must be not null and not empty,
+     * otherwise the method will fail silently and return {@code null}
      * @param key     Key to insert
      * @param value   Value to associate with the key
-     * @param comment Comment to append to the end of the line
-     *                in the config
+     * @param comment Comment to append to the end of the line in the config.
+     *                May be {@code null} or empty ({@code ""}), in which case no comment will be appended.
      * @return The previous value associated with the key, or null if there was no mapping
      */
     public String put(String key, String value, String comment) {
-        //TODO
-        return null;
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+        String[] keyBits = key.split("\\.");
+        KeyNode traveller = rootNode;
+        for (String bit : keyBits) {
+            traveller = traveller.getKeyChildren().get(bit);
+            if (traveller == null) {
+                traveller = new KeyNode(bit);
+            }
+        }
+        String previous = traveller.getValue();
+        traveller.setValue(value);
+        if (comment != null && !comment.isEmpty()) {
+            traveller.setComment(comment);
+        }
+        cache.put(key, value);
+        return previous;
     }
 
     /**
-     * Removes this key from the Config completely, along with any of its children.
-     * Under most circumstances, {@link Config#unset(Object)} is probably the desired operation.
-     * @param key Key to remove
+     * Removes the mapping of this key while maintaining all child mappings
+     * @param obj Key to remove
      * @return The value previously mapped to the key, if any.
      */
     @Override
-    public String remove(Object key) {
-        //TODO
-        return null;
+    public String remove(Object obj) {
+        if (!(obj instanceof String)) {
+            return null;
+        }
+        String key = (String) obj;
+        if (key.isEmpty()) {
+            return null;
+        }
+        String[] keyBits = key.split("\\.");
+        KeyNode traveller = rootNode;
+        for (String bit : keyBits) {
+            traveller = traveller.getKeyChildren().get(bit);
+            if (traveller == null) {
+                return null;
+            }
+        }
+        String previous = traveller.getValue();
+        traveller.setValue(null);
+        cache.remove(key);
+        return previous;
+    }
+
+    /**
+     * Removes the specified key along with all child keys.
+     * Under most circumstances, {@link Config#remove(Object)} is probably the desired operation.
+     * @param obj Key whose mapping should be removed
+     * @return The value previously mapped to the key, if any.
+     */
+    public String kill(Object obj) {
+        if (!(obj instanceof String)) {
+            return null;
+        }
+        String key = (String) obj;
+        if (key.isEmpty()) {
+            return null;
+        }
+        String[] keyBits = key.split("\\.");
+        KeyNode traveller = rootNode;
+        KeyNode parent = rootNode;
+        for (String bit : keyBits) {
+            parent = traveller;
+            traveller = traveller.getKeyChildren().get(bit);
+            if (traveller == null) {
+                return null;
+            }
+        }
+        String previous = traveller.getValue();
+        String prefix = (keyBits.length > 1
+                         ? String.join(".", Arrays.copyOfRange(keyBits, 0, keyBits.length - 1))
+                         : null);
+        killNode(traveller, parent, prefix);
+        return previous;
+    }
+
+    private void killNode(Node node, KeyNode parent, String prefix) {
+        //Remove from parent
+        parent.getChildren().remove(node);
+        if (node instanceof KeyNode) {
+            KeyNode keyNode = (KeyNode) node;
+            String fullKey = (prefix == null ? keyNode.key : prefix + "." + keyNode.key);
+            parent.getKeyChildren().remove(keyNode.key, node);
+            //Remove from cache
+            cache.remove(fullKey);
+            //Kill any children of this node
+            for (Node n : new ArrayList<>(keyNode.getChildren())) {
+                killNode(n, keyNode, fullKey);
+            }
+        }
     }
 
     /**
@@ -373,16 +469,6 @@ public class Config implements Map<String, String> {
         addBlankLines(lines, 0);
     }
 
-    /**
-     * Removes the mapping of this key while maintaining all child mappings
-     * @param key Key whose mapping should be removed
-     * @return The value previously mapped to the key, if any.
-     */
-    public String unset(Object key) {
-        //TODO
-        return null;
-    }
-
     @Override
     public void putAll(@NotNull Map<? extends String, ? extends String> m) {
         for (String key : m.keySet()) {
@@ -395,7 +481,7 @@ public class Config implements Map<String, String> {
      */
     @Override
     public void clear() {
-        rootNode.children.clear();
+        rootNode.getChildren().clear();
         cache.clear();
     }
 
@@ -438,18 +524,21 @@ public class Config implements Map<String, String> {
      * Represents one section of the config
      */
     @Getter @Setter
-    private abstract class Node {
-        private List<Node> children = new ArrayList<>();
-    }
+    private abstract class Node { }
 
     /**
      * Represents a key-value pair which may be followed by a comment
      */
     @Getter @Setter
+    @RequiredArgsConstructor
     private class KeyNode extends CommentNode {
-        private String key = null;
-        private int colonSpace;
-        private String value = null;
+        private final String key;
+        private int colonSpace = 1;
+        private String value;
+        @Setter(AccessLevel.NONE)
+        private List<Node> children = new ArrayList<>();
+        @Setter(AccessLevel.NONE)
+        private final Map<String, KeyNode> keyChildren = new HashMap<>();
 
         @Override
         public boolean equals(Object obj) {
@@ -458,6 +547,12 @@ public class Config implements Map<String, String> {
             }
             KeyNode other = (KeyNode) obj;
             return key.equals(other.key) && value.equals(other.value);
+        }
+    }
+
+    private class RootNode extends KeyNode {
+        public RootNode() {
+            super(null);
         }
     }
 
