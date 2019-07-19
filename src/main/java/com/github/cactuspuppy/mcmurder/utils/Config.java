@@ -154,7 +154,6 @@ public class Config implements Map<String, String> {
                     String value = matcher.group(4).trim();
                     currIndent = indent.length();
                     KeyNode thisKeyNode = new KeyNode(key);
-                    thisKeyNode.setValue(value);
                     thisKeyNode.setColonSpace(colonSpace);
                     if (hasComment) {
                         thisKeyNode.setComment(comment);
@@ -169,7 +168,10 @@ public class Config implements Map<String, String> {
                     }
                     keyMaker.add(key);
                     currentParents.getLast().getKeyChildren().put(key, thisKeyNode);
-                    cache.put(keyMaker.toString(), value);
+                    if (!value.isEmpty()) {
+                        thisKeyNode.setValue(value);
+                        cache.put(keyMaker.toString(), value);
+                    }
 
                     previousKeyNode = thisKeyNode;
                     thisNode = thisKeyNode;
@@ -195,7 +197,7 @@ public class Config implements Map<String, String> {
                     handleIndent(currIndents, currentParents, previousKeyNode, prevIndent, currIndent);
                     BlankNode blankNode;
                     if (previousNode instanceof BlankNode &&
-                        ((BlankNode) previousNode).getLineCount() == currIndent) {
+                        ((BlankNode) previousNode).getIndent() == currIndent) {
                         blankNode = (BlankNode) previousNode;
                     } else {
                         blankNode = new BlankNode(0, currIndent);
@@ -230,10 +232,6 @@ public class Config implements Map<String, String> {
             while (currIndent <= currIndents.peekLast()) {
                 currIndents.removeLast();
                 if (!currentParents.isEmpty()) currentParents.removeLast();
-                if (currIndents.isEmpty()) {
-                    currIndents.addLast(0);
-                    break;
-                }
             }
         }
     }
@@ -243,8 +241,13 @@ public class Config implements Map<String, String> {
      * @return The generated config string
      */
     public String saveToString() {
+        StringBuilder configBuilder = new StringBuilder();
+        buildConfig(rootNode, configBuilder, -1);
+        return configBuilder.toString();
+    }
+
+    private String buildConfig(Node node, StringBuilder configBuilder, int level) {
         //TODO
-        return null;
     }
 
     /**

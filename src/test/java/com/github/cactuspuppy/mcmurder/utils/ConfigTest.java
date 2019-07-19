@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
@@ -57,14 +58,24 @@ public class ConfigTest {
     }
 
     @Test
-    public void fileNullCheck() throws InvalidConfigurationException, IOException {
+    public void fileNullCheck() {
         assertThrows(IllegalArgumentException.class, () -> testConfig.load((File) null));
     }
 
     @Test
-    public void loadFromStringNullCheck() throws InvalidConfigurationException {
+    public void fileNotExistCheck() {
+        assertThrows(FileNotFoundException.class, () -> testConfig.load("not-exist.yml"));
+    }
+
+    @Test
+    public void loadFromStringNullCheck() {
         assertThrows(IllegalArgumentException.class, () -> testConfig.loadFromString(null));
         assertThrows(IllegalArgumentException.class, () -> testConfig.loadFromString(""));
+    }
+
+    @Test
+    public void saveFileNullCheck() {
+        assertThrows(IllegalArgumentException.class, () -> testConfig.save(null));
     }
 
     @Test
@@ -84,6 +95,25 @@ public class ConfigTest {
 
         testConfig.loadFromString(input);
         assertEquals("value02", testConfig.get("object.key"));
+    }
+
+    @Test
+    public void sizeTest01() throws InvalidConfigurationException {
+        String input =
+        "object:\n" +
+        "  key: value02\n";
+
+        testConfig.loadFromString(input);
+        assertEquals(1, testConfig.size());
+    }
+
+    @Test
+    public void sizeTest02() throws InvalidConfigurationException {
+        String input =
+        "\n\n# Starter comment\n" +
+        "# =========== #\n" +
+        "object:\n" +
+        "  key: value02\n";
     }
 
     @Test
@@ -179,6 +209,17 @@ public class ConfigTest {
         testConfig.put("key2.subkey", "Segol");
         assertEquals("Seagull roller", testConfig.get("key2"));
         assertEquals("Segol", testConfig.get("key2.subkey"));
+    }
+
+    @Test
+    public void testSubkeyWithoutTopKey() throws InvalidConfigurationException {
+        String input =
+        "\n\n# Starter comment\n" +
+        "key: value\n";
+        testConfig.loadFromString(input);
+        testConfig.put("key2.subkey", "2?");
+        assertNull(testConfig.get("key2"));
+        assertEquals("2?", testConfig.get("key2.subkey"));
     }
 
     @Test
