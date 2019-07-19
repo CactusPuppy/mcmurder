@@ -311,12 +311,31 @@ public class ConfigTest {
     }
 
     @Test
+    public void testSaveToString() throws InvalidConfigurationException {
+        String config =
+        "\n\n#==============#\n" +
+        "# Header comment\n" +
+        "#============#\n" +
+        "key: value\n" +
+        "  test: beep\n";
+        testConfig.loadFromString(config);
+        assertFalse(testConfig.isEmpty());
+        String output = testConfig.saveToString();
+        assertEquals(config, output);
+    }
+
+    @Test
     public void testSaveNoMod01() throws InvalidConfigurationException, IOException {
         File config01 = new File(getClass().getResource("/config01.yml").getFile());
         testConfig.load(config01);
         File saved01 = File.createTempFile("config01-temp", ".yml", tempDirectory);
         testConfig.save(saved01);
-        assertTrue(FileUtils.contentEqualsIgnoreEOL(config01, saved01, null));
+        boolean filesEqual = FileUtils.contentEqualsIgnoreEOL(config01, saved01, null);
+        if (!filesEqual) {
+            System.out.println("Original:\n" + FileUtils.readFileToString(config01, (String) null));
+            System.out.println("Output:\n" + FileUtils.readFileToString(saved01, (String) null));
+        }
+        assertTrue(filesEqual);
         if (!saved01.delete()) {
             System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
             fail("Failed to remove temporary config file");
@@ -350,7 +369,12 @@ public class ConfigTest {
         testConfig.put("key3", "value3");
         File saved = File.createTempFile("config02-mod-temp", ".yml", tempDirectory);
         testConfig.save(saved);
-        assertTrue(FileUtils.contentEqualsIgnoreEOL(config02Mod, saved, null));
+        boolean filesEqual = FileUtils.contentEqualsIgnoreEOL(config02Mod, saved, null);
+        if (!filesEqual) {
+            System.out.println("Original:\n" + FileUtils.readFileToString(config02Mod, (String) null));
+            System.out.println("Output:\n" + FileUtils.readFileToString(saved, (String) null));
+        }
+        assertTrue(filesEqual);
         if (!saved.delete()) {
             System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
             fail("Failed to remove temporary config file");

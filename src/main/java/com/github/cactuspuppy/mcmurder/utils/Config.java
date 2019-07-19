@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -242,12 +243,19 @@ public class Config implements Map<String, String> {
      */
     public String saveToString() {
         StringBuilder configBuilder = new StringBuilder();
-        buildConfig(rootNode, configBuilder, -1);
+        for (Node n : rootNode.getChildren()) {
+            buildConfig(n, configBuilder, 0);
+        }
         return configBuilder.toString();
     }
 
-    private String buildConfig(Node node, StringBuilder configBuilder, int level) {
-        //TODO
+    private void buildConfig(Node node, StringBuilder configBuilder, int level) {
+        configBuilder.append(node.toString(level)).append('\n');
+        if (node instanceof KeyNode) {
+            for (Node n : ((KeyNode) node).getChildren()) {
+                buildConfig(n, configBuilder, level + 1);
+            }
+        }
     }
 
     /**
@@ -319,12 +327,16 @@ public class Config implements Map<String, String> {
             return null;
         }
         String[] keyBits = key.split("\\.");
+        KeyNode parent = rootNode;
         KeyNode traveller = rootNode;
         for (String bit : keyBits) {
             traveller = traveller.getKeyChildren().get(bit);
             if (traveller == null) {
                 traveller = new KeyNode(bit);
+                parent.getChildren().add(traveller);
+                parent.getKeyChildren().put(bit, traveller);
             }
+            parent = traveller;
         }
         String previous = traveller.getValue();
         traveller.setValue(value);
@@ -419,20 +431,21 @@ public class Config implements Map<String, String> {
      * @param indent Number of levels to indent by
      */
     public void addComment(String comment, int indent) {
-        //TODO
+        comment = StringUtils.repeat(" ", indent * spacesPerIndent) + "#" + comment;
+        CommentNode commentNode = new CommentNode();
+        commentNode.setComment(comment);
+        rootNode.getChildren().add(commentNode);
     }
 
-    /**
-     * Add a standalone comment to the end of the config,<br/>
-     * optionally matching the indentation of the previous node
-     * @param comment         Comment to add
-     * @param matchPrevIndent Whether to match the previous node's indentation
-     *                        or use 0 indentation
-     *
-     * @see #addComment(String, int)
-     */
-    public void addComment(String comment, boolean matchPrevIndent) {
-        //TODO
+    private Node getLastNode(Node n) {
+        if (n instanceof KeyNode) {
+            KeyNode casted = (KeyNode) n;
+            if (casted.getChildren().isEmpty()) {
+                return n;
+            }
+            return getLastNode(casted.getChildren().get(casted.getChildren().size() - 1));
+        }
+        return n;
     }
 
     /**
@@ -450,17 +463,8 @@ public class Config implements Map<String, String> {
      * @param indent Number of levels to indent these lines by
      */
     public void addBlankLines(int lines, int indent) {
-        //TODO
-    }
-
-    /**
-     * Add a series of blank lines to the end of the config
-     * @param lines           Number of blank lines to add
-     * @param matchPrevIndent Whether to match the previous node's indentation
-     *                        or use top-level indentation (0)
-     */
-    public void addBlankLines(int lines, boolean matchPrevIndent) {
-        //TODO
+        BlankNode blankNode = new BlankNode(lines, indent);
+        rootNode.getChildren().add(blankNode);
     }
 
     /**
@@ -526,8 +530,9 @@ public class Config implements Map<String, String> {
     /**
      * Represents one section of the config
      */
-    @Getter @Setter
-    private abstract class Node { }
+    private interface Node {
+        String toString(int indentSpaces);
+    }
 
     /**
      * Represents a key-value pair which may be followed by a comment
@@ -551,6 +556,13 @@ public class Config implements Map<String, String> {
             KeyNode other = (KeyNode) obj;
             return key.equals(other.key) && value.equals(other.value);
         }
+
+        @Override
+        public String toString(int indentSpaces) {
+            return StringUtils.repeat(" ", indentSpaces * spacesPerIndent)
+                   + key + ":" + StringUtils.repeat(" ", colonSpace) + value
+                   + (getComment() != null ? getComment() : "");
+        }
     }
 
     private class RootNode extends KeyNode {
@@ -563,7 +575,7 @@ public class Config implements Map<String, String> {
      * Represents a # prefixed comment
      */
     @Getter @Setter
-    private class CommentNode extends Node {
+    private class CommentNode implements Node {
         private String comment = null;
 
         @Override
@@ -573,6 +585,16 @@ public class Config implements Map<String, String> {
             }
             return comment.equals(((CommentNode) obj).comment);
         }
+
+        @Override
+        public String toString() {
+            return null;
+        }
+
+        @Override
+        public String toString(int indentSpaces) {
+            return comment;
+        }
     }
 
     /**
@@ -581,7 +603,7 @@ public class Config implements Map<String, String> {
      */
     @Getter @Setter
     @AllArgsConstructor
-    private class BlankNode extends Node {
+    private class BlankNode implements Node {
         /**
          * Number of blank lines this node accounts for.
          */
@@ -601,6 +623,15 @@ public class Config implements Map<String, String> {
 
         public void incrLineCount() {
             lineCount++;
+        }
+
+        @Override
+        public String toString(int indentSpaces) {
+            StringJoiner joiner = new StringJoiner("\n");
+            for (int i = 0; i < lineCount; i++) {
+                joiner.add(StringUtils.repeat(" ", indent));
+            }
+            return joiner.toString();
         }
     }
 }
