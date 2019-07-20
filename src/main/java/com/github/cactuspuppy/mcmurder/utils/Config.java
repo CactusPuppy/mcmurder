@@ -242,15 +242,15 @@ public class Config implements Map<String, String> {
      * @return The generated config string
      */
     public String saveToString() {
-        StringBuilder configBuilder = new StringBuilder();
+        StringJoiner configBuilder = new StringJoiner("\n");
         for (Node n : rootNode.getChildren()) {
             buildConfig(n, configBuilder, 0);
         }
         return configBuilder.toString();
     }
 
-    private void buildConfig(Node node, StringBuilder configBuilder, int level) {
-        configBuilder.append(node.toString(level)).append('\n');
+    private void buildConfig(Node node, StringJoiner configBuilder, int level) {
+        configBuilder.add(node.toString(level));
         if (node instanceof KeyNode) {
             for (Node n : ((KeyNode) node).getChildren()) {
                 buildConfig(n, configBuilder, level + 1);
@@ -435,17 +435,6 @@ public class Config implements Map<String, String> {
         CommentNode commentNode = new CommentNode();
         commentNode.setComment(comment);
         rootNode.getChildren().add(commentNode);
-    }
-
-    private Node getLastNode(Node n) {
-        if (n instanceof KeyNode) {
-            KeyNode casted = (KeyNode) n;
-            if (casted.getChildren().isEmpty()) {
-                return n;
-            }
-            return getLastNode(casted.getChildren().get(casted.getChildren().size() - 1));
-        }
-        return n;
     }
 
     /**

@@ -112,8 +112,11 @@ public class ConfigTest {
         String input =
         "\n\n# Starter comment\n" +
         "# =========== #\n" +
-        "object:\n" +
-        "  key: value02\n";
+        "object:   \n" +
+        "  key: value02\n" +
+        "beep boop: value\n";
+        testConfig.loadFromString(input);
+        assertEquals(2, testConfig.size());
     }
 
     @Test
@@ -320,6 +323,7 @@ public class ConfigTest {
         "  test: beep\n";
         testConfig.loadFromString(config);
         assertFalse(testConfig.isEmpty());
+        testConfig.addBlankLines(1);
         String output = testConfig.saveToString();
         assertEquals(config, output);
     }
@@ -373,6 +377,36 @@ public class ConfigTest {
         if (!filesEqual) {
             System.out.println("Original:\n" + FileUtils.readFileToString(config02Mod, (String) null));
             System.out.println("Output:\n" + FileUtils.readFileToString(saved, (String) null));
+        }
+        assertTrue(filesEqual);
+        if (!saved.delete()) {
+            System.out.println("Unable to delete file, potential memory leak? Deleting on exit.");
+            fail("Failed to remove temporary config file");
+            saved.deleteOnExit();
+        }
+    }
+
+    @Test
+    public void testSaveAfterMod02() throws InvalidConfigurationException, IOException {
+        File config02 = new File(getClass().getResource("/config02.yml").getFile());
+        File target = new File(getClass().getResource("/config02-fullmod.yml").getFile());
+        testConfig.load(config02);
+        assertFalse(testConfig.isEmpty());
+        testConfig.kill("key2");
+        testConfig.put("awkward", "modification");
+        testConfig.addBlankLines(2);
+        testConfig.addComment(" The previous 2 blank lines tbh");
+        testConfig.put("key2.subkey2-1", "down here");
+        testConfig.put("key2", "moved");
+        testConfig.addBlankLines(1);
+        File saved = File.createTempFile("config02-mod-temp", ".yml", tempDirectory);
+        testConfig.save(saved);
+        boolean filesEqual = FileUtils.contentEqualsIgnoreEOL(target, saved, null);
+        if (!filesEqual) {
+            System.out.println("Original:\n" + FileUtils.readFileToString(target, (String) null));
+            System.out.println("------");
+            System.out.println("Output:\n" + FileUtils.readFileToString(saved, (String) null));
+            System.out.println("------");
         }
         assertTrue(filesEqual);
         if (!saved.delete()) {
