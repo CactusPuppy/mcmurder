@@ -352,6 +352,7 @@ public class Config implements Map<String, String> {
      * @param obj Key to remove
      * @return The value previously mapped to the key, if any.
      */
+    @SuppressWarnings("Duplicates")
     @Override
     public String remove(Object obj) {
         if (!(obj instanceof String)) {
@@ -381,6 +382,7 @@ public class Config implements Map<String, String> {
      * @param obj Key whose mapping should be removed
      * @return The value previously mapped to the key, if any.
      */
+    @SuppressWarnings("Duplicates")
     public String kill(Object obj) {
         if (!(obj instanceof String)) {
             return null;
