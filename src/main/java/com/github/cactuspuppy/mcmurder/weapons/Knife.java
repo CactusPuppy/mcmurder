@@ -1,6 +1,9 @@
 package com.github.cactuspuppy.mcmurder.weapons;
 
+import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
 import com.github.cactuspuppy.mcmurder.Main;
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -10,6 +13,8 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 public class Knife implements Listener {
     private static Entity throwKnife(Player p) {
@@ -57,7 +62,6 @@ public class Knife implements Listener {
         } else {
             e.setCancelled(true);
         }
-
     }
 
     @EventHandler
@@ -74,16 +78,23 @@ public class Knife implements Listener {
                 }
             }
             e.getEntity().remove();
+        } else if (e.getHitEntity() != null && e.getHitEntity() instanceof Player) {
+            Player p = (Player) e.getHitEntity();
+            p.setGameMode(GameMode.SPECTATOR);
+            p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 2, 0, true, false, false));
+            p.sendTitle(ChatColor.RED + "You Died!", "", 0, 40, 20);
+            //TODO: Blood particles and head drop
         }
-        if (e.getHitEntity() != null) {
-            if (e.getHitEntity() instanceof Player) {
-                Player p = (Player) e.getHitEntity();
-                p.setHealth(0);
-                p.sendMessage("You died :)");
-            } else {
-                e
-            }
+    }
 
+    @EventHandler
+    public void preventNonPlayerCollision(ProjectileCollideEvent e) {
+        if (!e.getEntity().hasPermission("murder.knife")) {
+            return;
         }
+        if (e.getCollidedWith() instanceof Player) {
+            return;
+        }
+        e.setCancelled(true);
     }
 }
