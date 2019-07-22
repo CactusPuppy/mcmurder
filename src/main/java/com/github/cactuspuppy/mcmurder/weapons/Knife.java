@@ -2,26 +2,28 @@ package com.github.cactuspuppy.mcmurder.weapons;
 
 import com.github.cactuspuppy.mcmurder.Main;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
 public class Knife implements Listener {
     private static Entity throwKnife(Player p) {
+        p.addAttachment(Main.getInstance(), "murder.throw_time." + System.currentTimeMillis(), true);
         Item knife = p.getWorld().dropItem(p.getLocation().add(0, 1.75, 0),
             new ItemStack(Material.IRON_SWORD)
         );
         knife.setPickupDelay(20);
-        knife.setVelocity(p.getLocation().getDirection().multiply(1.2));
         knife.addAttachment(Main.getInstance(), "murder.owner." + p.getUniqueId().toString(), true);
         knife.addAttachment(Main.getInstance(), "murder.knife", true);
+
+        Arrow arrow = p.launchProjectile(Arrow.class, p.getLocation().getDirection().multiply(2));
+        arrow.addAttachment(Main.getInstance(), "murder.knife", true);
+        arrow.addPassenger(knife);
 
         return knife;
     }
@@ -45,12 +47,43 @@ public class Knife implements Listener {
             return;
         }
         Player p = (Player) e.getEntity();
-        String pickupPerm = "murder.owner." + p.getUniqueId().toString();
-        if (!item.hasPermission(pickupPerm)) {
+        if (item.isOnGround()) {
+            String pickupPerm = "murder.owner." + p.getUniqueId().toString();
+            if (!item.hasPermission(pickupPerm)) {
+                e.setCancelled(true);
+                return;
+            }
+            p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
+        } else {
             e.setCancelled(true);
+        }
+
+    }
+
+    @EventHandler
+    public void onKnifeCollision(ProjectileHitEvent e) {
+        if (!e.getEntity().getType().equals(EntityType.ARROW)
+            || !e.getEntity().hasPermission("murder.knife")) {
             return;
         }
-        p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
-        item.remove();
+        Arrow a = (Arrow) e.getEntity();
+        if (e.getHitBlock() != null) {
+            for (Entity rider : a.getPassengers()) {
+                if (rider instanceof Item && rider.hasPermission("murder.knife")) {
+                    ((Item) rider).setPickupDelay(5);
+                }
+            }
+            e.getEntity().remove();
+        }
+        if (e.getHitEntity() != null) {
+            if (e.getHitEntity() instanceof Player) {
+                Player p = (Player) e.getHitEntity();
+                p.setHealth(0);
+                p.sendMessage("You died :)");
+            } else {
+                e
+            }
+
+        }
     }
 }

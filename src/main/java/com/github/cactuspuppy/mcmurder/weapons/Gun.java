@@ -1,5 +1,6 @@
 package com.github.cactuspuppy.mcmurder.weapons;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -12,6 +13,8 @@ public class Gun implements Listener {
         if (!(e.getAction().equals(Action.RIGHT_CLICK_AIR) || e.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
             return;
         }
-        if (e.getItem() == null)
+        if (e.getItem() == null || !e.getItem().getType().equals(Material.BOW)) {
+            return;
+        }
     }
 }
