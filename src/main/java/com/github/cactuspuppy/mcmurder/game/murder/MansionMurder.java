@@ -1,4 +1,4 @@
-package com.github.cactuspuppy.mcmurder.game;
+package com.github.cactuspuppy.mcmurder.game.murder;
 
 import org.bukkit.Location;
 

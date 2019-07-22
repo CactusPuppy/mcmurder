@@ -1,5 +1,6 @@
-package com.github.cactuspuppy.mcmurder.game;
+package com.github.cactuspuppy.mcmurder.game.murder;
 
+import com.github.cactuspuppy.mcmurder.game.Game;
 import com.github.cactuspuppy.mcmurder.utils.Logger;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
 import lombok.Getter;

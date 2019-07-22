@@ -1,9 +1,9 @@
 package com.github.cactuspuppy.mcmurder;
 
 import com.github.cactuspuppy.mcmurder.game.Game;
-import com.github.cactuspuppy.mcmurder.game.MansionMurder;
+import com.github.cactuspuppy.mcmurder.game.murder.MansionMurder;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
-import com.github.cactuspuppy.mcmurder.weapons.Knife;
+import com.github.cactuspuppy.mcmurder.game.murder.Knife;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -62,13 +62,7 @@ public class Main extends JavaPlugin {
         Logger.setOutput(java.util.logging.Logger.getLogger(ChatColor.RED + "MCMurder" + ChatColor.RESET));
         Bukkit.getPluginManager().registerEvents(new PlayerUtils(), this);
         return createConfig()
-            && registerListeners()
             && loadNewGame(MansionMurder.class);
-    }
-
-    private boolean registerListeners() {
-        Bukkit.getPluginManager().registerEvents(new Knife(), this);
-        return true;
     }
 
     private boolean createConfig() {

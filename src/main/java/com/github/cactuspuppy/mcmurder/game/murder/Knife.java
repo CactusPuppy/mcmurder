@@ -1,7 +1,9 @@
-package com.github.cactuspuppy.mcmurder.weapons;
+package com.github.cactuspuppy.mcmurder.game.murder;
 
 import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
 import com.github.cactuspuppy.mcmurder.Main;
+import com.github.cactuspuppy.mcmurder.game.Game;
+import lombok.AllArgsConstructor;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -16,8 +18,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+@AllArgsConstructor
 public class Knife implements Listener {
-    private static Entity throwKnife(Player p) {
+    private Game game;
+
+    private Entity throwKnife(Player p) {
         p.addAttachment(Main.getInstance(), "murder.throw_time." + System.currentTimeMillis(), true);
         Item knife = p.getWorld().dropItem(p.getLocation().add(0, 1.75, 0),
             new ItemStack(Material.IRON_SWORD)
@@ -79,6 +84,7 @@ public class Knife implements Listener {
             }
             e.getEntity().remove();
         } else if (e.getHitEntity() != null && e.getHitEntity() instanceof Player) {
+            //FIXME: Move to method in Game or Murder
             Player p = (Player) e.getHitEntity();
             p.setGameMode(GameMode.SPECTATOR);
             p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 2, 0, true, false, false));
