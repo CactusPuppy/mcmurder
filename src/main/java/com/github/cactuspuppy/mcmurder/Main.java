@@ -1,7 +1,9 @@
 package com.github.cactuspuppy.mcmurder;
 
 import com.github.cactuspuppy.mcmurder.game.Game;
+import com.github.cactuspuppy.mcmurder.game.MansionMurder;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
+import com.github.cactuspuppy.mcmurder.weapons.Knife;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -47,7 +49,7 @@ public class Main extends JavaPlugin {
         long elapsedNanos = System.nanoTime() - start;
         Logger.logInfo(this.getClass(), ChatColor.GREEN + "Startup complete");
         Logger.logInfo(this.getClass(), String.format(
-            ChatColor.LIGHT_PURPLE + "Time Elapsed: " + ChatColor.GOLD + "%1$.2fms (%2$dμs)",
+            ChatColor.LIGHT_PURPLE + "Time Elapsed: " + ChatColor.GOLD + "%1$.2fms (%2$fus)",
             elapsedNanos / 10e6, elapsedNanos / 10e3));
     }
 
@@ -59,7 +61,14 @@ public class Main extends JavaPlugin {
     private boolean baseSetup() {
         Logger.setOutput(java.util.logging.Logger.getLogger(ChatColor.RED + "MCMurder" + ChatColor.RESET));
         Bukkit.getPluginManager().registerEvents(new PlayerUtils(), this);
-        return createConfig();
+        return createConfig()
+            && registerListeners()
+            && loadNewGame(MansionMurder.class);
+    }
+
+    private boolean registerListeners() {
+        Bukkit.getPluginManager().registerEvents(new Knife(), this);
+        return true;
     }
 
     private boolean createConfig() {
@@ -94,10 +103,13 @@ public class Main extends JavaPlugin {
      * @return Whether the new game was successfully set
      */
     public boolean loadNewGame(Class<? extends Game> game) {
-        if (currentGame.isLocked()) {
+        if (currentGame != null && currentGame.isLocked()) {
+            Logger.logSevere(this.getClass(), "Current game is locked! Please disable the current game or wait for it to finish.");
             return false;
         }
-        currentGame.onUnload();
+        if (currentGame != null) {
+            currentGame.onUnload();
+        }
         try {
             currentGame = game.getConstructor().newInstance();
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {

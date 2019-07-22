@@ -1,5 +1,5 @@
 name: MCMurder
 author: CactusPuppy
-main: com.github.cactuspuppy.Main
-version: 0.1.0
+main: com.github.cactuspuppy.mcmurder.Main
+version: 0.1.3
 api-version: '1.14'
