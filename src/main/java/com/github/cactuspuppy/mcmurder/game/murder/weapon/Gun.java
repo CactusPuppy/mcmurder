@@ -1,6 +1,8 @@
-package com.github.cactuspuppy.mcmurder.game.murder;
+package com.github.cactuspuppy.mcmurder.game.murder.weapon;
 
 import com.destroystokyo.paper.ParticleBuilder;
+import com.github.cactuspuppy.mcmurder.game.Game;
+import lombok.AllArgsConstructor;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -65,7 +67,7 @@ public class Gun implements Listener {
             block.setBlockData(currData);
         } else if (result.getHitEntity() != null && result.getHitEntity() instanceof Player) {
             Player victim = (Player) result.getHitEntity();
-            //TODO: Pass death to Game
+            //TODO: Pass death to Game or Murder
         }
     }
 

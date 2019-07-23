@@ -8,6 +8,8 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.event.Listener;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
@@ -18,7 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @SuppressWarnings("SwitchStatementWithTooFewBranches")
-public abstract class Murder extends Game {
+public abstract class Murder extends Game implements Listener {
     private GameState state = GameState.LOBBY;
     static {
         setEvents(MurderEventTypes.class);
@@ -38,7 +40,7 @@ public abstract class Murder extends Game {
      * </p>
      */
     @Getter @Setter
-    private double murdererNumber = 0;
+    private double murdererNumber = 1;
 
     /**
      * <p>
@@ -54,7 +56,7 @@ public abstract class Murder extends Game {
      * </p>
      */
     @Getter @Setter
-    private double hunterNumber = 0;
+    private double hunterNumber = 1;
 
     protected Set<UUID> players = new HashSet<>();
     protected Set<UUID> spectators = new HashSet<>();
@@ -214,9 +216,11 @@ public abstract class Murder extends Game {
         spectators.add(p);
     }
 
-    private void assignRoles() {
+    private void assignRoles() throws InvalidConfigurationException {
         //TODO
     }
+
+
 
     public enum MurderEventTypes implements EventType {
         /**

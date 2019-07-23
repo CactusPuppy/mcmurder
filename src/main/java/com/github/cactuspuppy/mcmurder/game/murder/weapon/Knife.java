@@ -1,9 +1,9 @@
-package com.github.cactuspuppy.mcmurder.game.murder;
+package com.github.cactuspuppy.mcmurder.game.murder.weapon;
 
 import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
 import com.github.cactuspuppy.mcmurder.Main;
-import com.github.cactuspuppy.mcmurder.game.Game;
-import lombok.AllArgsConstructor;
+import com.github.cactuspuppy.mcmurder.game.murder.event.PlayerMurderEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -18,14 +18,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-@AllArgsConstructor
 public class Knife implements Listener {
-    private Game game;
-
     private Entity throwKnife(Player p) {
         p.addAttachment(Main.getInstance(), "murder.throw_time." + System.currentTimeMillis(), true);
         Item knife = p.getWorld().dropItem(p.getLocation().add(0, 1.75, 0),
-            new ItemStack(Material.IRON_SWORD)
+            new ItemStack(Material.IRON_SWORD, 0)
         );
         knife.setPickupDelay(20);
         knife.addAttachment(Main.getInstance(), "murder.owner." + p.getUniqueId().toString(), true);
@@ -90,6 +87,8 @@ public class Knife implements Listener {
             p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 2, 0, true, false, false));
             p.sendTitle(ChatColor.RED + "You Died!", "", 0, 40, 20);
             //TODO: Blood particles and head drop
+            PlayerMurderEvent event = new PlayerMurderEvent(p);
+            Bukkit.getServer().getPluginManager().callEvent(event);
         }
     }
 

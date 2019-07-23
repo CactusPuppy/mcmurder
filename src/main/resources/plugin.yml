@@ -3,3 +3,7 @@ author: CactusPuppy
 main: com.github.cactuspuppy.mcmurder.Main
 version: 0.1.3
 api-version: '1.14'
+permissions:
+  murder.admin:
+    description: "Allows the holder to interface with the plugin"
+    # TODO

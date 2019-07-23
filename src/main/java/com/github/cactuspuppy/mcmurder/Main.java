@@ -3,7 +3,6 @@ package com.github.cactuspuppy.mcmurder;
 import com.github.cactuspuppy.mcmurder.game.Game;
 import com.github.cactuspuppy.mcmurder.game.murder.MansionMurder;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
-import com.github.cactuspuppy.mcmurder.game.murder.Knife;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
