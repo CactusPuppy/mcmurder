@@ -33,21 +33,9 @@
             <id>papermc</id>
             <url>https://papermc.io/repo/repository/maven-public/</url>
         </repository>
-        <!--paperlib-->
-        <repository>
-            <id>papermc</id>
-            <url>https://papermc.io/repo/repository/maven-public/</url>
-        </repository>
     </repositories>
 
     <dependencies>
-        <!--spigot-->
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.14.3-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
         <!--paper-->
         <dependency>
             <groupId>com.destroystokyo.paper</groupId>

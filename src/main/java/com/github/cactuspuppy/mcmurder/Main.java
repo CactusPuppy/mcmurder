@@ -2,6 +2,8 @@ package com.github.cactuspuppy.mcmurder;
 
 import com.github.cactuspuppy.mcmurder.game.Game;
 import com.github.cactuspuppy.mcmurder.game.murder.MansionMurder;
+import com.github.cactuspuppy.mcmurder.game.murder.weapon.Gun;
+import com.github.cactuspuppy.mcmurder.game.murder.weapon.Knife;
 import com.github.cactuspuppy.mcmurder.utils.PlayerUtils;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
@@ -58,9 +60,10 @@ public class Main extends JavaPlugin {
     }
 
     private boolean baseSetup() {
-        Logger.setOutput(java.util.logging.Logger.getLogger(ChatColor.RED + "MCMurder" + ChatColor.RESET));
+        Logger.setOutput(this.getLogger());
         Bukkit.getPluginManager().registerEvents(new PlayerUtils(), this);
         return createConfig()
+            && registerWeapons()
             && loadNewGame(MansionMurder.class);
     }
 
@@ -85,6 +88,21 @@ public class Main extends JavaPlugin {
                 Logger.logSevere(this.getClass(), "Error while creating new config", e);
                 return false;
             }
+        }
+        return true;
+    }
+
+    private boolean registerWeapons() {
+        Knife knife = new Knife();
+        Gun gun = new Gun();
+        //Register listeners
+        Bukkit.getPluginManager().registerEvents(knife, this);
+        Bukkit.getPluginManager().registerEvents(gun, this);
+        //Register repeating tasks
+        int id = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, knife, 0, 1);
+        if (id == -1) {
+            Logger.logSevere(this.getClass(), "Failed to register knife repeating task");
+            return false;
         }
         return true;
     }
