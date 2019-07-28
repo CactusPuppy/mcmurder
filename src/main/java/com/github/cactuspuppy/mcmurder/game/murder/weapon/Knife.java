@@ -22,7 +22,7 @@ public class Knife implements Listener {
     private Entity throwKnife(Player p) {
         p.addAttachment(Main.getInstance(), "murder.throw_time." + System.currentTimeMillis(), true);
         Item knife = p.getWorld().dropItem(p.getLocation().add(0, 1.75, 0),
-            new ItemStack(Material.IRON_SWORD, 0)
+            new ItemStack(Material.IRON_SWORD, 1)
         );
         knife.setPickupDelay(20);
         knife.addAttachment(Main.getInstance(), "murder.owner." + p.getUniqueId().toString(), true);
@@ -60,7 +60,9 @@ public class Knife implements Listener {
                 e.setCancelled(true);
                 return;
             }
+            e.getItem().remove();
             p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
+            e.setCancelled(true);
         } else {
             e.setCancelled(true);
         }

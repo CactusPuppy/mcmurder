@@ -1,16 +1,9 @@
 package com.github.cactuspuppy.mcmurder.game.murder.weapon;
 
 import com.destroystokyo.paper.ParticleBuilder;
-import com.github.cactuspuppy.mcmurder.game.Game;
-import lombok.AllArgsConstructor;
-import org.bukkit.FluidCollisionMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,10 +25,10 @@ public class Gun implements Listener {
     }
 
     private void shootGun(Player p) {
+        Location startPoint = p.getEyeLocation().add(p.getLocation().getDirection().normalize().multiply(0.2));
         RayTraceResult result = p.getWorld().rayTrace(p.getEyeLocation(), p.getLocation().getDirection(),
                                                     200, FluidCollisionMode.NEVER, true, 0,
-                                                       entity -> (entity instanceof Player));
-        Location startPoint = p.getEyeLocation();
+                                                       entity -> (entity instanceof Player && !entity.getUniqueId().equals(p.getUniqueId())));
         Location endPoint;
         boolean resultNull = false;
         if (result == null) {
@@ -44,18 +37,28 @@ public class Gun implements Listener {
         } else {
             endPoint = vectorToLocation(result.getHitPosition(), p.getWorld());
         }
+        p.sendMessage("Start point " + startPoint.toString());
+        p.sendMessage("End point " + endPoint.toString());
         int subdivs = 3;
         Vector dir = p.getLocation().getDirection().normalize().multiply(1./subdivs);
+        p.sendMessage("direction vector " + dir.toString());
         double iterations = startPoint.distance(endPoint) * subdivs;
+        p.sendMessage("iterations " + iterations);
         for (int i = 0; i < iterations; i++) {
-            Location l = startPoint.add(dir.multiply(i));
+            Location l = startPoint.clone();
+            p.sendMessage("Dir: " + dir.multiply(i).toString());
+            l = l.add(dir.multiply(i));
 
             ParticleBuilder builder = new ParticleBuilder(Particle.SMOKE_NORMAL);
             builder.force(true);
             builder.allPlayers();
+            builder.count(1);
             builder.source(p);
             builder.location(l);
+            builder.extra(0);
+            builder.offset(0, 0, 0);
             builder.spawn();
+            p.sendMessage("Location " + i + " " + l.toString());
         }
         if (resultNull) {
             return;
