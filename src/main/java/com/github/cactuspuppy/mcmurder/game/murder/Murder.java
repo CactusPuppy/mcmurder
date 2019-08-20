@@ -165,7 +165,13 @@ public abstract class Murder extends Game implements Listener {
         assert state == GameState.STARTING;
         switch (e.getType().getName()) {
             case "ACTIVATE":
-                assignRoles();
+                try {
+                    assignRoles();
+                } catch (InvalidConfigurationException ex) {
+                    Logger.logSevere(this.getClass(), "Did not successfully assign roles, check your config", ex);
+                    state = GameState.LOBBY;
+                    return;
+                }
                 state = GameState.ACTIVE;
                 break;
         }
