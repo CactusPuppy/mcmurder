@@ -4,6 +4,7 @@ import com.github.cactuspuppy.mcmurder.game.murder.event.PlayerMurderEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -21,6 +22,7 @@ import java.util.HashSet;
 
 public class Knife implements Listener, Runnable {
     private static HashSet<Item> thrownKnives = new HashSet<>();
+    private static HashSet<Item> groundKnives = new HashSet<>();
 
     private Entity throwKnife(Player p) {
         Item knife = p.getWorld().dropItem(p.getEyeLocation(),
@@ -58,7 +60,9 @@ public class Knife implements Listener, Runnable {
             e.setCancelled(true);
         }
         p.sendMessage("Picking up knife...");
+        groundKnives.remove(i);
         e.getItem().remove();
+        p.playSound(p.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1, 1);
         p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
         e.setCancelled(true);
     }
@@ -68,13 +72,14 @@ public class Knife implements Listener, Runnable {
     public void run() {
         for (Item knife : new ArrayList<>(thrownKnives)) {
             //Summon smoke particles every so often
-            if (knife.getTicksLived() % 3 == 0) {
+            if (knife.getTicksLived() % 2 == 0) {
                 knife.getWorld().spawnParticle(Particle.SMOKE_NORMAL, knife.getLocation(), 3, 0, 0, 0, 0);
             }
 
             if (knife.isOnGround()) {
                 knife.setPickupDelay(40);
                 thrownKnives.remove(knife);
+                groundKnives.add(knife);
                 continue;
             }
             Player closestPlayer = (Player) knife.getNearbyEntities(1, 1, 1).stream()
@@ -91,13 +96,19 @@ public class Knife implements Listener, Runnable {
             }
             BoundingBox playerBox = closestPlayer.getBoundingBox();
             if (!playerBox.contains(knife.getLocation().toVector())) {
-                return;
+                continue;
             }
-            closestPlayer.sendMessage("You got hit!");
             Bukkit.getPluginManager().callEvent(new PlayerMurderEvent(closestPlayer));
             knife.setVelocity(new Vector(0, 0, 0));
             knife.setPickupDelay(40);
             thrownKnives.remove(knife);
+            groundKnives.add(knife);
+        }
+
+        for (Item knife : groundKnives) {
+            if (knife.getTicksLived() % 2 == 0) {
+                knife.getWorld().spawnParticle(Particle.SMOKE_NORMAL, knife.getLocation(), 5, 0, 0, 0, 0);
+            }
         }
     }
 }

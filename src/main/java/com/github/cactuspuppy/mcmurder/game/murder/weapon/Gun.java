@@ -3,7 +3,6 @@ package com.github.cactuspuppy.mcmurder.game.murder.weapon;
 import com.github.cactuspuppy.mcmurder.game.murder.event.PlayerMurderEvent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -43,7 +42,6 @@ public class Gun implements Listener {
         for (int i = 0; i < iterations; i++) {
             Vector delta = base.clone().multiply(i);
             Location l = startPoint.clone().add(delta);
-            p.sendMessage(String.format("Location %d: %s", i, l.toString()));
             l.getWorld().spawnParticle(Particle.SMOKE_NORMAL, l, 3, 0, 0, 0, 0);
         }
         if (resultNull) {
@@ -51,8 +49,7 @@ public class Gun implements Listener {
         }
         if (result.getHitBlock() != null) {
             Block block = result.getHitBlock();
-            BlockData currData = block.getBlockData();
-
+            block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, block.getType());
         } else if (result.getHitEntity() != null && result.getHitEntity() instanceof Player) {
             Player victim = (Player) result.getHitEntity();
             //TODO: Pass death to Game or Murder
