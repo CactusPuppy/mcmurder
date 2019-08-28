@@ -168,8 +168,9 @@ public abstract class Murder extends Game implements Listener {
                 try {
                     assignRoles();
                 } catch (InvalidConfigurationException ex) {
-                    //TODO: Inform admins
-                    Logger.logSevere(this.getClass(), "Exception while assigning roles, check the configuration", ex);
+                    Logger.logSevere(this.getClass(), "Did not successfully assign roles, check your config", ex);
+                    state = GameState.LOBBY;
+                    return;
                 }
                 state = GameState.ACTIVE;
                 break;

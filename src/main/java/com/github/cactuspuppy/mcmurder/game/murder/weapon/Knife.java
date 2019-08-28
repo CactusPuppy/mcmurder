@@ -1,37 +1,38 @@
 package com.github.cactuspuppy.mcmurder.game.murder.weapon;
 
-import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
-import com.github.cactuspuppy.mcmurder.Main;
 import com.github.cactuspuppy.mcmurder.game.murder.event.PlayerMurderEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.entity.*;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
-public class Knife implements Listener {
+import java.util.ArrayList;
+import java.util.HashSet;
+
+public class Knife implements Listener, Runnable {
+    private static HashSet<Item> thrownKnives = new HashSet<>();
+    private static HashSet<Item> groundKnives = new HashSet<>();
+
     private Entity throwKnife(Player p) {
-        p.addAttachment(Main.getInstance(), "murder.throw_time." + System.currentTimeMillis(), true);
-        Item knife = p.getWorld().dropItem(p.getLocation().add(0, 1.75, 0),
-            new ItemStack(Material.IRON_SWORD, 1)
-        );
-        knife.setPickupDelay(20);
-        knife.addAttachment(Main.getInstance(), "murder.owner." + p.getUniqueId().toString(), true);
-        knife.addAttachment(Main.getInstance(), "murder.knife", true);
-
-        Arrow arrow = p.launchProjectile(Arrow.class, p.getLocation().getDirection().multiply(2));
-        arrow.addAttachment(Main.getInstance(), "murder.knife", true);
-        arrow.addPassenger(knife);
-
+        Item knife = p.getWorld().dropItem(p.getEyeLocation(),
+                                           new ItemStack(Material.IRON_SWORD, 1));
+        knife.setThrower(p.getUniqueId());
+        knife.setVelocity(p.getLocation().getDirection().multiply(1.4));
+        knife.setPickupDelay(Integer.MAX_VALUE);
+        knife.setOwner(p.getUniqueId());
+        knife.setCanMobPickup(false);
+        thrownKnives.add(knife);
         return knife;
     }
 
@@ -49,59 +50,65 @@ public class Knife implements Listener {
 
     @EventHandler
     public void onItemPickup(EntityPickupItemEvent e) {
-        Item item = e.getItem();
-        if (!(e.getEntity() instanceof Player) || !item.hasPermission("murder.knife")) {
+        if (!(e.getEntity() instanceof Player)) {
             return;
         }
+        Item i = e.getItem();
         Player p = (Player) e.getEntity();
-        if (item.isOnGround()) {
-            String pickupPerm = "murder.owner." + p.getUniqueId().toString();
-            if (!item.hasPermission(pickupPerm)) {
-                e.setCancelled(true);
-                return;
-            }
-            e.getItem().remove();
-            p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
-            e.setCancelled(true);
-        } else {
+        // Do not pick up item if it has an owner
+        if (i.getOwner() != null && !i.getOwner().equals(p.getUniqueId())) {
             e.setCancelled(true);
         }
-    }
-
-    @EventHandler
-    public void onKnifeCollision(ProjectileHitEvent e) {
-        if (!e.getEntity().getType().equals(EntityType.ARROW)
-            || !e.getEntity().hasPermission("murder.knife")) {
-            return;
-        }
-        Arrow a = (Arrow) e.getEntity();
-        if (e.getHitBlock() != null) {
-            for (Entity rider : a.getPassengers()) {
-                if (rider instanceof Item && rider.hasPermission("murder.knife")) {
-                    ((Item) rider).setPickupDelay(5);
-                }
-            }
-            e.getEntity().remove();
-        } else if (e.getHitEntity() != null && e.getHitEntity() instanceof Player) {
-            //FIXME: Move to method in Game or Murder
-            Player p = (Player) e.getHitEntity();
-            p.setGameMode(GameMode.SPECTATOR);
-            p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 2, 0, true, false, false));
-            p.sendTitle(ChatColor.RED + "You Died!", "", 0, 40, 20);
-            //TODO: Blood particles and head drop
-            PlayerMurderEvent event = new PlayerMurderEvent(p);
-            Bukkit.getServer().getPluginManager().callEvent(event);
-        }
-    }
-
-    @EventHandler
-    public void preventNonPlayerCollision(ProjectileCollideEvent e) {
-        if (!e.getEntity().hasPermission("murder.knife")) {
-            return;
-        }
-        if (e.getCollidedWith() instanceof Player) {
-            return;
-        }
+        p.sendMessage("Picking up knife...");
+        groundKnives.remove(i);
+        e.getItem().remove();
+        p.playSound(p.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1, 1);
+        p.getInventory().setItem(1, new ItemStack(Material.IRON_SWORD));
         e.setCancelled(true);
+    }
+
+
+    @Override
+    public void run() {
+        for (Item knife : new ArrayList<>(thrownKnives)) {
+            //Summon smoke particles every so often
+            if (knife.getTicksLived() % 2 == 0) {
+                knife.getWorld().spawnParticle(Particle.SMOKE_NORMAL, knife.getLocation(), 3, 0, 0, 0, 0);
+            }
+
+            if (knife.isOnGround()) {
+                knife.setPickupDelay(40);
+                thrownKnives.remove(knife);
+                groundKnives.add(knife);
+                continue;
+            }
+            Player closestPlayer = (Player) knife.getNearbyEntities(1, 1, 1).stream()
+                                            .filter(e -> e instanceof Player && e.getUniqueId().equals(knife.getOwner()))
+                                            .min((o1, o2) -> (int) (o1.getLocation().distance(knife.getLocation()) - o2.getLocation().distance(knife.getLocation())))
+                                            .orElse(null);
+            if (closestPlayer == null) {
+                continue;
+            } else if (knife.getOwner() != null
+                        && knife.getTicksLived() < 20
+                        && knife.getOwner().equals(closestPlayer.getUniqueId())) {
+                // Prevent sprinting into own knife
+                continue;
+            }
+            BoundingBox playerBox = closestPlayer.getBoundingBox();
+            if (!playerBox.contains(knife.getLocation().toVector())) {
+                continue;
+            }
+            Bukkit.getPluginManager().callEvent(new PlayerMurderEvent(closestPlayer));
+            knife.setVelocity(new Vector(0, 0, 0));
+            knife.setPickupDelay(40);
+            thrownKnives.remove(knife);
+            groundKnives.add(knife);
+        }
+
+        for (Item knife : groundKnives) {
+            if (knife.getTicksLived() % 2 == 0) {
+                knife.getWorld().spawnParticle(Particle.SMOKE_NORMAL, knife.getLocation(), 5, 0, 0, 0, 0);
+            }
+        }
     }
 }

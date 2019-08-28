@@ -9,6 +9,7 @@ import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.plugin.java.JavaPlugin;
 import com.github.cactuspuppy.mcmurder.utils.Config;
@@ -17,7 +18,10 @@ import com.github.cactuspuppy.mcmurder.utils.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main extends JavaPlugin {
     @Getter
@@ -26,6 +30,8 @@ public class Main extends JavaPlugin {
     private Config mainConfig;
     @Getter
     private Game currentGame;
+
+    private Map<String, Sound> soundMap = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -60,10 +66,10 @@ public class Main extends JavaPlugin {
     }
 
     private boolean baseSetup() {
-        Logger.setOutput(java.util.logging.Logger.getLogger(ChatColor.RED + "MCMurder" + ChatColor.RESET));
+        Logger.setOutput(this.getLogger());
         Bukkit.getPluginManager().registerEvents(new PlayerUtils(), this);
         return createConfig()
-            && registerListeners()
+            && registerWeapons()
             && loadNewGame(MansionMurder.class);
     }
 
@@ -92,9 +98,18 @@ public class Main extends JavaPlugin {
         return true;
     }
 
-    private boolean registerListeners() {
-        Bukkit.getPluginManager().registerEvents(new Knife(), Main.getInstance());
-        Bukkit.getPluginManager().registerEvents(new Gun(), Main.getInstance());
+    private boolean registerWeapons() {
+        Knife knife = new Knife();
+        Gun gun = new Gun();
+        //Register listeners
+        Bukkit.getPluginManager().registerEvents(knife, this);
+        Bukkit.getPluginManager().registerEvents(gun, this);
+        //Register repeating tasks
+        int id = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, knife, 0, 1);
+        if (id == -1) {
+            Logger.logSevere(this.getClass(), "Failed to register knife repeating task");
+            return false;
+        }
         return true;
     }
 
